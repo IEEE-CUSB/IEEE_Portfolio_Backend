@@ -10,6 +10,7 @@ const config_service = new ConfigService();
 
 const base_config: any = {
   type: 'postgres',
+  url: process.env.DATABASE_URL || config_service.get<string>('DATABASE_URL'),
   host:
     process.env.POSTGRES_HOST || config_service.get<string>('POSTGRES_HOST'),
   username:
