@@ -25,7 +25,6 @@ import { existsSync, readFileSync } from 'fs';
 
         return {
           type: 'postgres',
-          url: config_service.get<string>('DATABASE_URL'),
           host: config_service.get<string>('POSTGRES_HOST'),
           username: config_service.get<string>('POSTGRES_USERNAME'),
           password: config_service.get<string>('POSTGRES_PASSWORD'),
