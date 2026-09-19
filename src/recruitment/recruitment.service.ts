@@ -25,7 +25,16 @@ export class RecruitmentService {
     return this.vacanciesRepository.findOpen(search, category_id);
   }
 
-  async applyToVacancy(
+  
+  async getVacancyById(id: string) {
+    const vacancy = await this.vacanciesRepository.findById(id);
+    if (!vacancy) {
+      throw new NotFoundException('Vacancy not found');
+    }
+    return vacancy;
+  }
+
+async applyToVacancy(
     userId: string,
     vacancyId: string,
     dto: ApplyToVacancyDto,

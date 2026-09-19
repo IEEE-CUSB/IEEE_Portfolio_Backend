@@ -79,7 +79,18 @@ export class RecruitmentController {
     return this.recruitmentService.getOpenVacancies(search, category_id);
   }
 
-  @Post('vacancies/:id/apply')
+  
+  @Get('vacancies/:id')
+  @ApiOperation({ summary: 'Get a specific vacancy by ID' })
+  @ApiOkResponse({ description: 'Vacancy details retrieved successfully' })
+  @ApiNotFoundErrorResponse(ERROR_MESSAGES.VACANCY_NOT_FOUND)
+  @ApiInternalServerError(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+  @ResponseMessage('Vacancy retrieved successfully')
+  getVacancyById(@Param('id', ParseUUIDPipe) id: string) {
+    return this.recruitmentService.getVacancyById(id);
+  }
+
+@Post('vacancies/:id/apply')
   @ApiOperation(apply_to_vacancy_swagger.operation)
   @ApiCreatedResponse(apply_to_vacancy_swagger.responses.success)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.ALREADY_APPLIED_OR_CLOSED)
