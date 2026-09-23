@@ -1,6 +1,6 @@
 {
     "framework": null,
-    "buildCommand": "npm run build && mkdir -p public && echo 'ready' > public/index.html",
+    "buildCommand": "npm run build && npm run migration:run && mkdir -p public && echo 'ready' > public/index.html",
     "outputDirectory": "public",
     "functions": {
         "api/index.ts": {

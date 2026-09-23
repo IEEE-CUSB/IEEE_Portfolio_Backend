@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsEnum, Min, Max } from 'class-validator';
+import { IsInt, IsNotEmpty, IsEnum, Min, Max, IsArray, IsOptional, IsObject } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
 import { AwardSource } from 'src/awards/enums/award-source.enum';
@@ -24,13 +24,24 @@ export class CreateAwardDto {
   description!: string;
 
   @ApiProperty({
-    description: 'Year the award was won',
-    example: 2025,
+    description: 'Years the award was won',
+    example: [2025, 2024],
+    type: [Number],
   })
-  @IsInt()
-  @Min(1900)
-  @Max(new Date().getFullYear() + 1) // Allow up to next year
-  year!: number;
+  @IsArray()
+  @IsInt({ each: true })
+  @Min(1900, { each: true })
+  @Max(new Date().getFullYear() + 1, { each: true })
+  years!: number[];
+
+  @ApiProperty({
+    description: 'Optional details per year',
+    example: { '2025': '1st place' },
+    required: false,
+  })
+  @IsOptional()
+  @IsObject()
+  details?: Record<string, string>;
 
   @ApiProperty({
     description: 'Source of the award',

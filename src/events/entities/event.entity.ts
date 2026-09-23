@@ -73,6 +73,9 @@ export class Event {
   @OneToMany(() => EventImage, (image) => image.event)
   images!: EventImage[];
 
+  @Column({ default: true })
+  is_published!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 

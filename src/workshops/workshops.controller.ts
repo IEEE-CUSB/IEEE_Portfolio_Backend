@@ -80,6 +80,7 @@ export class WorkshopsController {
     @Query('search') search?: string,
     @Query('location') location?: string,
     @Query('category_id') category_id?: string,
+    @Query('include_unpublished') include_unpublished?: string,
   ) {
     return this.workshopsService.findAll(
       parseInt(page),
@@ -88,6 +89,7 @@ export class WorkshopsController {
       search,
       location,
       category_id,
+      include_unpublished === 'true',
     );
   }
 

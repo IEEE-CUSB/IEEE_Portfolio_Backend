@@ -1,5 +1,5 @@
-import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsUUID, Min } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsDateString, IsEnum, IsInt, IsNotEmpty, IsUUID, Min, IsBoolean, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
 import { IsHumanText } from 'src/decorators/human-text.decorator';
 
@@ -70,4 +70,9 @@ export class CreateEventDto {
   })
   @IsDateString()
   registration_deadline!: string;
+
+  @ApiPropertyOptional({ example: true, description: 'Whether the event is publicly visible' })
+  @IsBoolean()
+  @IsOptional()
+  is_published?: boolean;
 }

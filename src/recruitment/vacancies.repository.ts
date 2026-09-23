@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, DeepPartial } from 'typeorm';
 import { Vacancy } from './entities/vacancy.entity';
 import { VacanciesQueryDto } from 'src/admin/recruitment/dto/vacancies-query.dto';
 import { paginate, PaginatedResult } from 'src/common/utils/pagination.util';
@@ -19,6 +19,7 @@ export class VacanciesRepository {
     const qb = this.vacanciesRepository
       .createQueryBuilder('vacancy')
       .leftJoinAndSelect('vacancy.category', 'category')
+      .leftJoinAndSelect('vacancy.questions', 'question')
       .orderBy('vacancy.created_at', 'DESC')
       .addOrderBy('vacancy.id', 'DESC');
 
@@ -33,6 +34,7 @@ export class VacanciesRepository {
     const qb = this.vacanciesRepository
       .createQueryBuilder('vacancy')
       .leftJoinAndSelect('vacancy.category', 'category')
+      .leftJoinAndSelect('vacancy.questions', 'question')
       .where('vacancy.is_open = :isOpen', { isOpen: true })
       .orderBy('vacancy.created_at', 'DESC');
 
@@ -67,15 +69,15 @@ export class VacanciesRepository {
   async findById(id: string): Promise<Vacancy | null> {
     return this.vacanciesRepository.findOne({ 
       where: { id },
-      relations: ['category']
+      relations: ['category', 'questions']
     });
   }
 
-  create(data: Partial<Vacancy>): Vacancy {
+  create(data: DeepPartial<Vacancy>): Vacancy {
     return this.vacanciesRepository.create(data);
   }
 
-  async preload(data: Partial<Vacancy>): Promise<Vacancy | undefined> {
+  async preload(data: DeepPartial<Vacancy>): Promise<Vacancy | undefined> {
     return this.vacanciesRepository.preload(data);
   }
 

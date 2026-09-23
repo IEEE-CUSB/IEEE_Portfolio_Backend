@@ -12,6 +12,7 @@ import {
   WorkshopRegistrationStatus,
 } from './entities/workshop-registration.entity';
 import { User } from 'src/users/entities/user.entity';
+import { RoleName } from 'src/roles/entities/role.entity';
 import { ERROR_MESSAGES } from 'src/constants/swagger-messages';
 
 @Injectable()
@@ -75,6 +76,7 @@ export class WorkshopsService {
     search?: string,
     location?: string,
     category_id?: string,
+    include_unpublished?: boolean,
   ) {
     const skip = (page - 1) * limit;
 
@@ -82,8 +84,14 @@ export class WorkshopsService {
       .createQueryBuilder('workshop')
       .leftJoinAndSelect('workshop.images', 'images')
       .leftJoinAndSelect('workshop.instructors', 'instructors')
-      .leftJoinAndSelect('workshop.category', 'category')
-      .orderBy('workshop.start_time', 'ASC')
+      .leftJoinAndSelect('workshop.category', 'category');
+
+    const isAdmin = currentUser?.role?.name === RoleName.ADMIN || currentUser?.role?.name === RoleName.SUPER_ADMIN;
+    if (!(isAdmin && include_unpublished)) {
+      qb.where('workshop.is_published = :is_published', { is_published: true });
+    }
+
+    qb.orderBy('workshop.start_time', 'ASC')
       .skip(skip)
       .take(limit);
 

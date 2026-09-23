@@ -82,7 +82,17 @@ export class AdminCategoriesService {
       throw new NotFoundException(ERROR_MESSAGES.CATEGORY_NOT_FOUND);
     }
 
-    // Find or create "Other" category for this type
+    // For committees, we don't reassign to "Other". We just delete if not in use.
+    if (category.type === CategoryType.COMMITTEE) {
+      const usageCount = await this.committeeRepo.count({ where: { category: { id } } as any });
+      if (usageCount > 0) {
+        throw new ConflictException('Cannot delete category: It is currently used by one or more committees.');
+      }
+      await this.categoriesRepository.remove(category);
+      return { message: 'Category deleted successfully' };
+    }
+
+    // For other types, find or create "Other" category for this type
     let otherCategory = await this.categoriesRepository.findByNameAndType('Other', category.type);
     if (!otherCategory) {
       otherCategory = this.categoriesRepository.create({
@@ -101,9 +111,6 @@ export class AdminCategoriesService {
         await this.workshopRepo.update({ category_id: category.id } as any, { category_id: otherCategory.id } as any);
       } else if (category.type === CategoryType.RECRUITMENT) {
         await this.vacancyRepo.update({ category_id: category.id } as any, { category_id: otherCategory.id } as any);
-      } else if (category.type === CategoryType.COMMITTEE) {
-        // committee has category relation directly mapped to 'category' property
-        await this.committeeRepo.update({ category: { id: category.id } } as any, { category: otherCategory } as any);
       }
     }
 

@@ -11,9 +11,10 @@ import {
   Min,
   MinLength,
   ValidateNested,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
 import {
   CONTAINS_LETTERS_REGEX,
@@ -139,4 +140,9 @@ export class CreateWorkshopDto {
   @IsUUID(undefined, { each: true })
   @IsOptional()
   instructor_ids?: string[];
+
+  @ApiPropertyOptional({ example: true, description: 'Whether the workshop is publicly visible' })
+  @IsBoolean()
+  @IsOptional()
+  is_published?: boolean;
 }

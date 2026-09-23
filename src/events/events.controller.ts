@@ -78,6 +78,7 @@ export class EventsController {
     @Query('search') search?: string,
     @Query('location') location?: string,
     @Query('category_id') category_id?: string,
+    @Query('include_unpublished') include_unpublished?: string,
   ) {
     return this.eventsService.findAll(
       parseInt(page),
@@ -86,6 +87,7 @@ export class EventsController {
       search,
       location,
       category_id,
+      include_unpublished === 'true',
     );
   }
 

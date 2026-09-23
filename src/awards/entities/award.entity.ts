@@ -24,8 +24,11 @@ export class Award {
   @Column({ type: 'text' })
   description!: string;
 
-  @Column({ type: 'int' })
-  year!: number;
+  @Column({ type: 'int', array: true, default: [] })
+  years!: number[];
+
+  @Column({ type: 'jsonb', nullable: true })
+  details!: any;
 
   @Column({ type: 'enum', enum: AwardSource, default: AwardSource.GLOBAL })
   source!: AwardSource;

@@ -63,4 +63,35 @@ export class MediaService {
       invalidate: true,
     });
   }
+
+  async uploadDocument(file: any, folder: string): Promise<UploadedMedia> {
+    this.configureCloudinary();
+
+    return new Promise((resolve, reject) => {
+      const uploadStream = cloudinary.uploader.upload_stream(
+        {
+          folder,
+          resource_type: 'auto',
+          overwrite: false,
+        },
+        (error, result) => {
+          if (error || !result) {
+            reject(error || new Error('Failed to upload document'));
+            return;
+          }
+
+          resolve({
+            url: result.secure_url,
+            public_id: result.public_id,
+            bytes: result.bytes,
+            format: result.format,
+            width: result.width,
+            height: result.height,
+          });
+        },
+      );
+
+      Readable.from(file.buffer).pipe(uploadStream);
+    });
+  }
 }

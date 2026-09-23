@@ -96,6 +96,9 @@ export class Workshop {
   @OneToMany(() => WorkshopImage, (image) => image.workshop)
   images!: WorkshopImage[];
 
+  @Column({ default: true })
+  is_published!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 

@@ -1,4 +1,5 @@
-import {
+import type { Request, Response } from 'express';
+import { Req,  
   Controller,
   Get,
   Post,
@@ -41,7 +42,7 @@ import { UpdateApplicationStatusDto } from './dto/update-application-status.dto'
 import { VacanciesQueryDto } from './dto/vacancies-query.dto';
 import { ApplicationsQueryDto } from './dto/applications-query.dto';
 import { ResponseMessage } from '../../decorators/response-message.decorator';
-import type { Request, Response } from 'express';
+// already imported from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   admin_create_vacancy_swagger,
@@ -226,5 +227,20 @@ export class AdminRecruitmentController {
       'Content-Disposition': `inline; filename="CV.pdf"`,
     });
     res.send(file.fileBuffer);
+  }
+
+  @Get('file/download')
+  @ApiOperation({ summary: 'Download/View an application file' })
+  @ApiOkResponse({ description: 'File downloaded successfully' })
+  @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
+  @ApiForbiddenErrorResponse(ERROR_MESSAGES.FORBIDDEN_ACTION)
+  async downloadApplicationFile(
+    @Query('key') fileKey: string,
+    @Res() res: Response,
+  ) {
+    if (!fileKey) {
+      return res.status(400).json({ message: 'File key is required' });
+    }
+    return this.adminRecruitmentService.downloadApplicationFile(fileKey, res);
   }
 }

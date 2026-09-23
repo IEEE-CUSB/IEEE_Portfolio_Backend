@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InternalServerErrorException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Application } from '../../recruitment/entities/application.entity';
 import { VacanciesRepository } from '../../recruitment/vacancies.repository';
 import { ApplicationsRepository } from '../../recruitment/applications.repository';
@@ -214,5 +214,22 @@ export class AdminRecruitmentService {
     await this.mediaService.deleteImage(publicId);
 
     return vacancy;
+  }
+
+  async downloadApplicationFile(fileKey: string, res: any) {
+    try {
+      const file = await this.storageService.getFile(fileKey);
+      res.set({
+        'Content-Type': file.contentType,
+        'Content-Length': file.size,
+        'Content-Disposition': `inline; filename="${fileKey.split('/').pop()}"`,
+      });
+      res.send(file.fileBuffer);
+    } catch (error) {
+      if (error.status === 404) {
+        throw new NotFoundException('File not found');
+      }
+      throw new InternalServerErrorException('Failed to download file');
+    }
   }
 }

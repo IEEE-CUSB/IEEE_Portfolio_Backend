@@ -10,6 +10,7 @@ const config_service = new ConfigService();
 
 const base_config: any = {
   type: 'postgres',
+  url: process.env.DATABASE_URL || config_service.get<string>('DATABASE_URL'),
   host:
     process.env.POSTGRES_HOST || config_service.get<string>('POSTGRES_HOST'),
   username:
@@ -37,6 +38,7 @@ const base_config: any = {
     'src/committees/entities/committee.entity.ts',
     'src/committees/entities/committee-member.entity.ts',
     'src/recruitment/entities/vacancy.entity.ts',
+    'src/recruitment/entities/vacancy-question.entity.ts',
     'src/recruitment/entities/application.entity.ts',
     'src/workshops/entities/workshop.entity.ts',
     'src/workshops/entities/instructor.entity.ts',

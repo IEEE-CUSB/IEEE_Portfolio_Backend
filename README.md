@@ -96,3 +96,38 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Docker Deployment (AlmaLinux VPS)
+
+The project includes a `docker-compose.yml` that provisions:
+1. **NestJS Backend**
+2. **PostgreSQL 15**
+3. **Redis 7**
+4. **MinIO** (S3-compatible storage, replacing Cloudinary and Backblaze)
+
+### Running on the VPS
+
+1. SSH into your VM and navigate to the project root.
+2. Edit your `.env` file to configure MinIO credentials (they replace Backblaze/Cloudinary):
+   ```env
+   # Remove Cloudinary variables (CLOUDINARY_*)
+   
+   # Update Storage variables to point to MinIO
+   BB_ENDPOINT=http://minio:9000
+   BB_ACCESS_KEY_ID=admin
+   BB_SECRET_ACCESS_KEY=admin12345
+   BB_BUCKET_NAME=ieee-storage
+   BB_REGION=us-east-1
+   
+   # Set Database and Redis for Docker
+   DATABASE_URL=postgresql://postgres:password@postgres:5432/ieeecusb
+   REDIS_HOST=redis
+   REDIS_PORT=6379
+   REDIS_PASSWORD=""
+   ```
+3. Run the stack:
+   ```bash
+   docker-compose up -d --build
+   ```
+
+MinIO Console is available on port `9001` (login with `admin` / `admin12345`). The NestJS backend is exposed on port `3000`.
