@@ -6,7 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 import { PostgreSQLModule } from './databases/postgresql.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
-import { MailModule } from './mail/mail.module';
 import { RedisModule } from './redis/redis.module';
 import { EventsModule } from './events/events.module';
 import { BoardModule } from './board/board.module';
@@ -20,7 +19,7 @@ import { MediaModule } from './media/media.module';
 import { WorkshopsModule } from './workshops/workshops.module';
 import { StorageModule } from './storage/storage.module';
 import { RecruitmentModule } from './recruitment/recruitment.module';
-
+import { BrevoMailModule } from './mail/mail-brevo.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,7 +30,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     AuthModule,
     UsersModule,
     RolesModule,
-    MailModule,
+    BrevoMailModule,
     RedisModule,
     EventsModule,
     BoardModule,

@@ -1,4 +1,10 @@
-import { InternalServerErrorException, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  InternalServerErrorException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Application } from '../../recruitment/entities/application.entity';
 import { VacanciesRepository } from '../../recruitment/vacancies.repository';
 import { ApplicationsRepository } from '../../recruitment/applications.repository';
@@ -12,6 +18,7 @@ import { paginatedResponse } from 'src/common/utils/pagination.util';
 import * as ExcelJS from 'exceljs';
 import { MediaService } from '../../media/media.service';
 import { resolveMediaFolder } from '../../media/media.utils';
+import { BrevoMailService } from '../../mail/mail-brevo.service';
 
 const VACANCIES_MEDIA_FOLDER = resolveMediaFolder(
   'VACANCIES_IMAGES_FILE_NAME',
@@ -23,13 +30,15 @@ type ApplicationWithCvUrl = Application & { cv_url?: string };
 
 @Injectable()
 export class AdminRecruitmentService {
+  private readonly logger = new Logger(AdminRecruitmentService.name); // added
+
   constructor(
+    private readonly brevoMailService: BrevoMailService,
     private readonly vacanciesRepository: VacanciesRepository,
     private readonly applicationsRepository: ApplicationsRepository,
     private readonly storageService: StorageService,
     private readonly mediaService: MediaService,
   ) {}
-
   async createVacancy(dto: CreateVacancyDto) {
     const vacancy = this.vacanciesRepository.create(dto);
     return this.vacanciesRepository.save(vacancy);
@@ -83,8 +92,61 @@ export class AdminRecruitmentService {
     if (!application) {
       throw new NotFoundException(ERROR_MESSAGES.APPLICATION_NOT_FOUND);
     }
+
+    // A decision is final: once accepted or rejected, it can't be changed.
+    // This also guarantees the applicant never gets two emails.
+    if (application.status !== 'PENDING') {
+      throw new BadRequestException(
+        `This application was already ${application.status.toLowerCase()} and can't be changed.`,
+      );
+    }
+
+    // PENDING -> PENDING: nothing to do
+    if (status === 'PENDING') {
+      return application;
+    }
+
     application.status = status;
-    return this.applicationsRepository.save(application);
+    const saved = await this.applicationsRepository.save(application);
+
+    await this.sendDecisionEmail(id, status);
+
+    return saved;
+  }
+
+  private async sendDecisionEmail(
+    applicationId: string,
+    status: 'ACCEPTED' | 'REJECTED',
+  ) {
+    // The decision is already saved, so a mail problem must never fail the request
+    try {
+      const application =
+        await this.applicationsRepository.findByIdWithUser(applicationId);
+
+      if (!application?.user?.email) {
+        this.logger.warn(`No email found for application ${applicationId}`);
+        return;
+      }
+
+      const vacancy = await this.vacanciesRepository.findById(
+        application.vacancy_id,
+      );
+
+      await this.brevoMailService.sendRecruitmentResultEmail(
+        application.user.email,
+        {
+          name: application.user.name,
+          decision: status === 'ACCEPTED' ? 'accepted' : 'rejected',
+          vacancyTitle: vacancy?.title,
+        },
+      );
+      this.logger.log(`Sent ${status} email for application ${applicationId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send ${status} email for application ${applicationId}`,
+        error as Error,
+      );
+    }
   }
 
   async exportApplicationsToExcel(
@@ -164,7 +226,6 @@ export class AdminRecruitmentService {
     }
     return this.storageService.getFile(application.user.cv_file_key);
   }
-
 
   private async getVacancyOrFail(id: string) {
     const vacancy = await this.vacanciesRepository.findById(id);
