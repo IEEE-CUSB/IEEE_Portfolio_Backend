@@ -3,80 +3,69 @@ export function buildEmailVerificationHtml(params: {
   logoUrl?: string;
 }): string {
   const { otp, logoUrl } = params;
+  const resolvedLogoUrl = logoUrl || 'cid:ieee_logo';
+  const year = new Date().getFullYear();
 
-  const resolvedLogoUrl =
-    logoUrl ||
-    'https://via.placeholder.com/150x50/ffffff/00629B?text=IEEE+CUSB';
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IEEE CUSB Verification</title>
-    <style>
-        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f7; color: #51545E; }
-
-        @media only screen and (max-width: 600px) {
-            .email-container { width: 100% !important; padding: 20px !important; }
-            .otp-code { font-size: 28px !important; letter-spacing: 5px !important; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>IEEE CUSB Verification</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
-        <tr>
-            <td align="center">
-
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
-
-                    <tr>
-                        <td style="background-color: #00629B; padding: 40px 0; text-align: center;">
-                            <img src="${resolvedLogoUrl}"
-                                 alt="IEEE CUSB Logo"
-                                 width="150"
-                                 style="display: block; margin: 0 auto; max-width: 80%; height: auto; border: 0;">
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="color: #333333; font-size: 22px; margin-top: 0; margin-bottom: 20px; text-align: center;">Welcome to the Community!</h2>
-
-                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px; color: #51545E;">
-                                Hi there,
-                            </p>
-                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 30px; color: #51545E;">
-                                Thank you for joining <strong>IEEE CUSB</strong>. To complete your registration and verify your email address, please use the One-Time Password (OTP) below.
-                            </p>
-
-                            <div style="background-color: #E6F0F6; border-radius: 4px; padding: 20px; text-align: center; margin-bottom: 30px; border: 1px dashed #00629B;">
-                                <span class="otp-code" style="font-size: 36px; font-weight: bold; color: #00629B; letter-spacing: 8px; display: block;">${otp}</span>
-                            </div>
-
-                            <p style="font-size: 14px; color: #d9534f; text-align: center; font-weight: bold; margin-bottom: 30px;">
-                                This code will expire in 10 minutes.
-                            </p>
-
-                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 0; color: #51545E;">
-                                If you did not request this email, please ignore it.
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="background-color: #f4f4f7; padding: 20px; text-align: center; border-top: 1px solid #eaeaec;">
-                            <p style="font-size: 12px; color: #999999; margin: 0;">
-                                &copy; ${new Date().getFullYear()} IEEE Cairo University Student Branch. All rights reserved.<br>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-
+<body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fa; width: 100%; margin: 0 auto;">
+    <tr>
+      <td align="center" style="padding: 60px 16px 40px 16px;">
+        <!-- Main Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td align="center" style="padding: 48px 40px 32px 40px;">
+              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none;">
             </td>
-        </tr>
-    </table>
+          </tr>
 
+          <!-- Content -->
+          <tr>
+            <td style="padding: 0 48px 48px 48px; text-align: center;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;">Verify Your Email</h1>
+              <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 26px; color: #475569;">
+                Welcome to <strong>IEEE CUSB</strong>! To complete your account setup and verify your email address, please enter the One-Time Password (OTP) below.
+              </p>
+
+              <!-- OTP Box -->
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 0 auto 24px auto;">
+                <p style="margin: 0; font-size: 40px; font-weight: 700; color: #00529b; letter-spacing: 12px; text-align: center; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+              </div>
+
+              <!-- Warning text -->
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #bd0d2a;">
+                <span style="display:inline-block; vertical-align:middle; margin-right:4px;">⏱</span> This code expires in 10 minutes.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Footer -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px;">
+          <tr>
+            <td align="center" style="padding: 32px 24px;">
+              <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 20px; color: #64748b;">
+                If you didn't create an account with IEEE CUSB, you can safely ignore this email.
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                &copy; ${year} IEEE Cairo University Student Branch. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }
@@ -86,81 +75,69 @@ export function buildPasswordResetEmailHtml(params: {
   logoUrl?: string;
 }): string {
   const { otp, logoUrl } = params;
-
-  const resolvedLogoUrl =
-    logoUrl ||
-    'https://via.placeholder.com/150x50/ffffff/00629B?text=IEEE+CUSB';
+  const resolvedLogoUrl = logoUrl || 'cid:ieee_logo';
+  const year = new Date().getFullYear();
 
   return `<!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Your IEEE CUSB Password</title>
-    <style>
-        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f7; color: #51545E; }
-
-        @media only screen and (max-width: 600px) {
-            .email-container { width: 100% !important; padding: 20px !important; }
-            .otp-code { font-size: 28px !important; letter-spacing: 5px !important; }
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Reset IEEE CUSB Password</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f4f7; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;">
-
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f4f7; padding: 40px 0;">
-        <tr>
-            <td align="center">
-
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow: hidden;">
-
-                    <tr>
-                        <td style="background-color: #00629B; padding: 40px 0; text-align: center;">
-                            <img src="${resolvedLogoUrl}"
-                                 alt="IEEE CUSB Logo"
-                                 width="150"
-                                 style="display: block; margin: 0 auto; max-width: 80%; height: auto; border: 0;">
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding: 40px 30px;">
-                            <h2 style="color: #333333; font-size: 22px; margin-top: 0; margin-bottom: 20px; text-align: center;">Password Reset Request</h2>
-
-                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 20px; color: #51545E;">
-                                Hello,
-                            </p>
-                            <p style="font-size: 16px; line-height: 24px; margin-bottom: 30px; color: #51545E;">
-                                We received a request to reset the password for your <strong>IEEE CUSB</strong> account. Use the code below to proceed with the reset:
-                            </p>
-
-                            <div style="background-color: #f9f9f9; border-radius: 4px; padding: 20px; text-align: center; margin-bottom: 30px; border: 1px solid #eaeaec;">
-                                <span class="otp-code" style="font-size: 36px; font-weight: bold; color: #333333; letter-spacing: 8px; display: block;">${otp}</span>
-                            </div>
-
-                            <p style="font-size: 14px; color: #d9534f; text-align: center; font-weight: bold; margin-bottom: 30px;">
-                                This security code expires in 10 minutes.
-                            </p>
-
-                            <p style="font-size: 14px; line-height: 21px; margin-bottom: 0; color: #888888; border-top: 1px solid #eee; padding-top: 20px;">
-                                <strong>Didn't request this?</strong> If you didn't try to reset your password, you can safely ignore this email. Your password will not change until you use this code to create a new one.
-                            </p>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style="background-color: #f4f4f7; padding: 20px; text-align: center; border-top: 1px solid #eaeaec;">
-                            <p style="font-size: 12px; color: #999999; margin: 0;">
-                                &copy; ${new Date().getFullYear()} IEEE Cairo University Student Branch. All rights reserved.<br>
-                            </p>
-                        </td>
-                    </tr>
-                </table>
-
+<body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fa; width: 100%; margin: 0 auto;">
+    <tr>
+      <td align="center" style="padding: 60px 16px 40px 16px;">
+        <!-- Main Card -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;">
+          
+          <!-- Logo Header -->
+          <tr>
+            <td align="center" style="padding: 48px 40px 32px 40px;">
+              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none;">
             </td>
-        </tr>
-    </table>
+          </tr>
 
+          <!-- Content -->
+          <tr>
+            <td style="padding: 0 48px 48px 48px; text-align: center;">
+              <h1 style="margin: 0 0 16px 0; font-size: 24px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px;">Password Reset Request</h1>
+              <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 26px; color: #475569;">
+                We received a request to reset the password for your <strong>IEEE CUSB</strong> account. Please enter the One-Time Password (OTP) below.
+              </p>
+
+              <!-- OTP Box -->
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 0 auto 24px auto;">
+                <p style="margin: 0; font-size: 40px; font-weight: 700; color: #1e293b; letter-spacing: 12px; text-align: center; font-family: 'Courier New', Courier, monospace;">${otp}</p>
+              </div>
+
+              <!-- Warning text -->
+              <p style="margin: 0; font-size: 14px; font-weight: 600; color: #bd0d2a;">
+                <span style="display:inline-block; vertical-align:middle; margin-right:4px;">⏱</span> This code expires in 10 minutes.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Footer -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 520px;">
+          <tr>
+            <td align="center" style="padding: 32px 24px;">
+              <p style="margin: 0 0 12px 0; font-size: 13px; line-height: 20px; color: #64748b;">
+                <strong>Didn't request this?</strong> You can safely ignore this email — your password will remain unchanged.
+              </p>
+              <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+                &copy; ${year} IEEE Cairo University Student Branch. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+
+      </td>
+    </tr>
+  </table>
 </body>
 </html>`;
 }

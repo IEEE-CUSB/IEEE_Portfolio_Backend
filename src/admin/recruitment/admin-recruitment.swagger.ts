@@ -123,9 +123,9 @@ export const admin_get_applications_swagger = {
 
 export const admin_update_application_status_swagger = {
   operation: {
-    summary: 'Update application status',
+    summary: 'Accept or reject an application',
     description:
-      'Admins can update the status of an application (e.g. ACCEPTED, REJECTED).',
+      'Admins can accept or reject a PENDING application. The applicant is emailed the decision automatically. A decision is final: an application that was already accepted or rejected cannot be changed (400).',
   },
   responses: {
     success: {
