@@ -19,7 +19,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { RedisKeyPrefix } from 'src/redis/redis.constants';
 import { RolesService } from 'src/roles/roles.service';
 import { RoleName } from 'src/roles/entities/role.entity';
-import { BrevoMailService } from '../mail/mail-brevo.service';
+import { MailService } from '../mail/mail.service';
 import { StorageService } from 'src/storage/storage.service';
 import {
   ALLOWED_CV_TYPES,
@@ -53,7 +53,7 @@ export class AuthService {
     private readonly jwt_service: JwtService,
     private readonly redisService: RedisService,
     private readonly roles_service: RolesService,
-    private readonly mailerService: BrevoMailService,
+    private readonly mailerService: MailService,
     private readonly storageService: StorageService,
   ) {}
 

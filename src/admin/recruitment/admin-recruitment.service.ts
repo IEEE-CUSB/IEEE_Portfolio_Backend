@@ -18,7 +18,7 @@ import { paginatedResponse } from 'src/common/utils/pagination.util';
 import * as ExcelJS from 'exceljs';
 import { MediaService } from '../../media/media.service';
 import { resolveMediaFolder } from '../../media/media.utils';
-import { BrevoMailService } from '../../mail/mail-brevo.service';
+import { MailService } from '../../mail/mail.service';
 
 const VACANCIES_MEDIA_FOLDER = resolveMediaFolder(
   'VACANCIES_IMAGES_FILE_NAME',
@@ -33,7 +33,7 @@ export class AdminRecruitmentService {
   private readonly logger = new Logger(AdminRecruitmentService.name); // added
 
   constructor(
-    private readonly brevoMailService: BrevoMailService,
+    private readonly mailService: MailService,
     private readonly vacanciesRepository: VacanciesRepository,
     private readonly applicationsRepository: ApplicationsRepository,
     private readonly storageService: StorageService,
@@ -88,7 +88,8 @@ export class AdminRecruitmentService {
     id: string,
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED',
   ) {
-    const application = await this.applicationsRepository.findById(id);
+    // Load with user so we have the email ready for the decision email — no second query later.
+    const application = await this.applicationsRepository.findByIdWithUser(id);
     if (!application) {
       throw new NotFoundException(ERROR_MESSAGES.APPLICATION_NOT_FOUND);
     }
@@ -109,22 +110,19 @@ export class AdminRecruitmentService {
     application.status = status;
     const saved = await this.applicationsRepository.save(application);
 
-    await this.sendDecisionEmail(id, status);
+    await this.sendDecisionEmail(application, status);
 
     return saved;
   }
 
   private async sendDecisionEmail(
-    applicationId: string,
+    application: Application & { user?: { email?: string; name?: string } },
     status: 'ACCEPTED' | 'REJECTED',
   ) {
     // The decision is already saved, so a mail problem must never fail the request
     try {
-      const application =
-        await this.applicationsRepository.findByIdWithUser(applicationId);
-
       if (!application?.user?.email) {
-        this.logger.warn(`No email found for application ${applicationId}`);
+        this.logger.warn(`No email found for application ${application.id}`);
         return;
       }
 
@@ -132,7 +130,7 @@ export class AdminRecruitmentService {
         application.vacancy_id,
       );
 
-      await this.brevoMailService.sendRecruitmentResultEmail(
+      await this.mailService.sendRecruitmentResultEmail(
         application.user.email,
         {
           name: application.user.name,
@@ -140,10 +138,10 @@ export class AdminRecruitmentService {
           vacancyTitle: vacancy?.title,
         },
       );
-      this.logger.log(`Sent ${status} email for application ${applicationId}`);
+      this.logger.log(`Sent ${status} email for application ${application.id}`);
     } catch (error) {
       this.logger.error(
-        `Failed to send ${status} email for application ${applicationId}`,
+        `Failed to send ${status} email for application ${application.id}`,
         error as Error,
       );
     }

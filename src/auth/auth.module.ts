@@ -11,7 +11,7 @@ import { RolesModule } from 'src/roles/roles.module';
 // import { GoogleStrategy } from './strategies/google.strategy';
 // import { GithubStrategy } from './strategies/github.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { BrevoMailModule } from '../mail/mail-brevo.module';
+import { MailModule } from '../mail/mail.module';
 import { StorageModule } from 'src/storage/storage.module';
 @Module({
   imports: [
@@ -43,7 +43,7 @@ import { StorageModule } from 'src/storage/storage.module';
     UsersModule,
     RedisModule,
     RolesModule,
-    BrevoMailModule,
+    MailModule,
     StorageModule,
   ],
   providers: [AuthService, JwtStrategy],

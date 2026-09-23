@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Transporter } from 'nodemailer';
-import { BREVO_MAIL_TRANSPORTER } from './mail-brevo.constants';
+import { MAIL_TRANSPORTER } from './mail.constants';
 import {
   buildRecruitmentResultHtml,
   type RecruitmentDecision,
@@ -17,17 +17,17 @@ import {
 } from './templates/otp-email.template';
 
 @Injectable()
-export class BrevoMailService {
-  private readonly logger = new Logger(BrevoMailService.name);
+export class MailService {
+  private readonly logger = new Logger(MailService.name);
 
   constructor(
-    @Inject(BREVO_MAIL_TRANSPORTER) private readonly transporter: Transporter,
+    @Inject(MAIL_TRANSPORTER) private readonly transporter: Transporter,
     private readonly configService: ConfigService,
   ) {}
 
   /**
    * Generic send. `from` is optional — omit it to use the default sender
-   * configured on the transporter (BREVO_DEFAULT_FROM_*).
+   * configured on the transporter (MAIL_DEFAULT_FROM_*).
    * Pass e.g. '"IEEE CUSB Events" <events@ieeecusb.org>' to override it.
    */
   async sendEmail(
@@ -35,6 +35,7 @@ export class BrevoMailService {
     subject: string,
     html: string,
     from?: string,
+    attachments?: any[],
   ): Promise<void> {
     try {
       await this.transporter.sendMail({
@@ -42,6 +43,7 @@ export class BrevoMailService {
         to,
         subject,
         html,
+        attachments,
       });
       this.logger.log(`Email sent to ${to}${from ? ` from ${from}` : ''}`);
     } catch (error) {
@@ -49,11 +51,24 @@ export class BrevoMailService {
       throw new ServiceUnavailableException('Could not send email');
     }
   }
+
   private getAuthFrom(): string | undefined {
-    const name = this.configService.get<string>('BREVO_AUTH_FROM_NAME');
-    const address = this.configService.get<string>('BREVO_AUTH_FROM_ADDRESS');
+    const name = this.configService.get<string>('MAIL_AUTH_FROM_NAME');
+    const address = this.configService.get<string>('MAIL_AUTH_FROM_ADDRESS');
     if (!address) return undefined;
     return name ? `"${name}" <${address}>` : address;
+  }
+
+  /**
+   * Always attach the local logo.png so it works seamlessly in Gmail
+   * even when testing locally.
+   */
+  private getLogoAttachment() {
+    return {
+      filename: 'logo.png',
+      path: require('path').join(process.cwd(), 'public', 'logo.png'),
+      cid: 'ieee_logo' // matches 'cid:ieee_logo' in templates
+    };
   }
 
   async sendRecruitmentResultEmail(
@@ -69,21 +84,20 @@ export class BrevoMailService {
         ? 'Congratulations! Your IEEE CUSB application was accepted'
         : 'Update on your IEEE CUSB application';
 
-    const html = buildRecruitmentResultHtml(params);
+    const html = buildRecruitmentResultHtml(params); // defaults to cid:ieee_logo
 
-    // No `from` passed: uses the default (careers@ieeecusb.org)
-    await this.sendEmail(to, subject, html);
+    await this.sendEmail(to, subject, html, undefined, [this.getLogoAttachment()]);
   }
 
   async sendEmailVerificationOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Email Verification One-Time Password (OTP)';
     const html = buildEmailVerificationHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom());
+    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()]);
   }
 
   async sendPasswordResetOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Password Reset One-Time Password (OTP)';
     const html = buildPasswordResetEmailHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom());
+    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()]);
   }
 }

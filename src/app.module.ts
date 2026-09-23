@@ -19,7 +19,7 @@ import { MediaModule } from './media/media.module';
 import { WorkshopsModule } from './workshops/workshops.module';
 import { StorageModule } from './storage/storage.module';
 import { RecruitmentModule } from './recruitment/recruitment.module';
-import { BrevoMailModule } from './mail/mail-brevo.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -30,7 +30,6 @@ import { BrevoMailModule } from './mail/mail-brevo.module';
     AuthModule,
     UsersModule,
     RolesModule,
-    BrevoMailModule,
     RedisModule,
     EventsModule,
     BoardModule,
