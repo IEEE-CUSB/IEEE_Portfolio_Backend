@@ -3,8 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
 import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { MailService } from './mail.service';
-
-const MAIL_TRANSPORTER = 'MAIL_TRANSPORTER';
+import { MAIL_TRANSPORTER } from './mail.constants';
 
 @Module({
   imports: [ConfigModule],
@@ -12,21 +11,23 @@ const MAIL_TRANSPORTER = 'MAIL_TRANSPORTER';
     {
       provide: MAIL_TRANSPORTER,
       useFactory: (config: ConfigService) => {
-        const transportOptions: SMTPTransport.Options = {
-          host: config.get('GMAIL_SMTP_HOST'),
-          port: config.get('GMAIL_SMTP_PORT'),
-          secure: config.get<boolean>('GMAIL_SMTP_SECURE'),
+        const options: SMTPTransport.Options = {
+          host: config.get<string>('SMTP_HOST'),
+          port: Number(config.get('SMTP_PORT')),
+          secure: /^(true|1|yes)$/i.test(String(config.get('SMTP_SECURE') ?? '')),
           auth: {
-            user: config.get('GMAIL_SMTP_LOGIN'),
-            pass: config.get('GMAIL_SMTP_PASSWORD'),
+            user: config.get<string>('SMTP_LOGIN'),
+            pass: config.get<string>('SMTP_PASSWORD'),
           },
         };
 
-        const defaults = {
-          from: `"${config.get('GMAIL_EMAIL_FROM_NAME')}" <${config.get('GMAIL_EMAIL_FROM_ADDRESS')}>`,
-        };
+        // Default sender used for all outgoing mail unless a call-site overrides it.
+        const fromName = config.get<string>('MAIL_DEFAULT_FROM_NAME');
+        const fromAddress = config.get<string>('MAIL_DEFAULT_FROM_ADDRESS');
 
-        return nodemailer.createTransport(transportOptions, defaults);
+        return nodemailer.createTransport(options, {
+          from: `"${fromName}" <${fromAddress}>`,
+        });
       },
       inject: [ConfigService],
     },

@@ -11,7 +11,7 @@ import { RolesModule } from 'src/roles/roles.module';
 // import { GoogleStrategy } from './strategies/google.strategy';
 // import { GithubStrategy } from './strategies/github.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { MailModule } from 'src/mail/mail.module';
+import { MailModule } from '../mail/mail.module';
 import { StorageModule } from 'src/storage/storage.module';
 @Module({
   imports: [

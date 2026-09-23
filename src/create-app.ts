@@ -5,9 +5,13 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
 import { ResponseInterceptor } from './interceptor/response.interceptor';
+import { join } from 'path';
 
 export async function createApp(): Promise<NestExpressApplication> {
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Serve everything in /public as static files (e.g. GET /logo.png)
+    app.useStaticAssets(join(__dirname, '..', 'public'));
     app.useGlobalPipes(
         new ValidationPipe({
             transform: true,

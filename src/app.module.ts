@@ -6,7 +6,6 @@ import { ConfigModule } from '@nestjs/config';
 import { PostgreSQLModule } from './databases/postgresql.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
-import { MailModule } from './mail/mail.module';
 import { RedisModule } from './redis/redis.module';
 import { EventsModule } from './events/events.module';
 import { BoardModule } from './board/board.module';
@@ -31,7 +30,6 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     AuthModule,
     UsersModule,
     RolesModule,
-    MailModule,
     RedisModule,
     EventsModule,
     BoardModule,
