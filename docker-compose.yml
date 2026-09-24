@@ -6,9 +6,11 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      - CLIENT_MAX_BODY_SIZE=50m
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
-      - ./nginx-proxy.conf:/etc/nginx/conf.d/custom_proxy.conf:ro
+      - ./nginx-proxy.conf:/etc/nginx/vhost.d/default:ro
 
   postgres:
     image: postgres:15-alpine
