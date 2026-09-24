@@ -26,6 +26,9 @@ export async function createApp(): Promise<NestExpressApplication> {
         credentials: true,
     });
 
+    app.use(require('express').json({ limit: '50mb' }));
+    app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
+
     // response interceptor
     app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
 
