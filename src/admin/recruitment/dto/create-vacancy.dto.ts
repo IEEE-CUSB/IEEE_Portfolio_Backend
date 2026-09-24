@@ -48,7 +48,7 @@ export class CreateVacancyDto {
   @ApiPropertyOptional({ example: 'Develop and maintain backend services.' })
   @IsOptionalHumanText({
     minLength: 6,
-    maxLength: 1000,
+    maxLength: 6000,
     fieldLabel: 'description',
   })
   description?: string;
