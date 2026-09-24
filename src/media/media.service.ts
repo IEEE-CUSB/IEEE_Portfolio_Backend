@@ -2,10 +2,20 @@ import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { Readable } from 'stream';
 import { UploadedMedia } from './media.types';
+import sharp from 'sharp';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class MediaService {
+  constructor(private readonly storageService: StorageService) {}
+
+  private get isCloudinaryEnabled() {
+    return process.env.USE_CLOUDINARY === 'true';
+  }
+
   private configureCloudinary() {
+    if (!this.isCloudinaryEnabled) return;
+    
     const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } =
       process.env;
 
@@ -26,42 +36,75 @@ export class MediaService {
   }
 
   async uploadImage(file: any, folder: string): Promise<UploadedMedia> {
-    this.configureCloudinary();
+    const webpBuffer = await sharp(file.buffer)
+      .webp({ quality: 80 })
+      .toBuffer();
 
-    return new Promise((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(
-        {
-          folder,
-          resource_type: 'image',
-          overwrite: false,
-        },
-        (error, result) => {
-          if (error || !result) {
-            reject(error || new Error('Failed to upload image'));
-            return;
-          }
+    if (this.isCloudinaryEnabled) {
+      this.configureCloudinary();
 
-          resolve({
-            url: result.secure_url,
-            public_id: result.public_id,
-            bytes: result.bytes,
-            format: result.format,
-            width: result.width,
-            height: result.height,
-          });
-        },
-      );
+      return new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder,
+            resource_type: 'image',
+            overwrite: false,
+          },
+          (error, result) => {
+            if (error || !result) {
+              reject(error || new Error('Failed to upload image'));
+              return;
+            }
 
-      Readable.from(file.buffer).pipe(uploadStream);
-    });
+            resolve({
+              url: result.secure_url,
+              public_id: result.public_id,
+              bytes: result.bytes,
+              format: result.format,
+              width: result.width,
+              height: result.height,
+            });
+          },
+        );
+
+        Readable.from(webpBuffer).pipe(uploadStream);
+      });
+    } else {
+      const fileName = file.originalname 
+        ? file.originalname.replace(/\.[^/.]+$/, '.webp') 
+        : 'image.webp';
+        
+      const uploaded = await this.storageService.uploadFile({
+        fileName,
+        fileBuffer: webpBuffer,
+        contentType: 'image/webp',
+        prefix: folder ? `${folder}/` : '',
+        allowedTypes: ['webp'],
+      });
+
+      return {
+        url: uploaded.fileUrl,
+        public_id: uploaded.fileKey,
+        bytes: webpBuffer.length,
+        format: 'webp',
+        width: 0,
+        height: 0,
+      };
+    }
   }
 
   async deleteImage(publicId: string): Promise<void> {
-    this.configureCloudinary();
-    await cloudinary.uploader.destroy(publicId, {
-      resource_type: 'image',
-      invalidate: true,
-    });
+    if (this.isCloudinaryEnabled) {
+      this.configureCloudinary();
+      await cloudinary.uploader.destroy(publicId, {
+        resource_type: 'image',
+        invalidate: true,
+      });
+    } else {
+      try {
+        await this.storageService.deleteFile(publicId);
+      } catch (e) {}
+    }
   }
 
   async uploadDocument(file: any, folder: string): Promise<UploadedMedia> {
