@@ -8,6 +8,7 @@ services:
       - "80:80"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx-proxy.conf:/etc/nginx/conf.d/custom_proxy.conf:ro
 
   postgres:
     image: postgres:15-alpine
