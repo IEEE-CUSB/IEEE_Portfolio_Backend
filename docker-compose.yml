@@ -68,6 +68,7 @@ services:
       - BB_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-admin12345}
       - BB_BUCKET_NAME=${BB_BUCKET_NAME:-ieee-storage}
       - BB_REGION=us-east-1
+      - USE_CLOUDINARY=false
     env_file:
       - .env
     depends_on:
