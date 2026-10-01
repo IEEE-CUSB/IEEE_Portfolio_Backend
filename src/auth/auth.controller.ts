@@ -183,46 +183,8 @@ export class AuthController {
     return { access_token };
   }
 
-  @ApiOperation(send_email_otp_swagger.operation)
-  @ApiOkResponse(send_email_otp_swagger.responses.success)
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
-  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
-  @ResponseMessage(SUCCESS_MESSAGES.OTP_GENERATED)
-  @SkipPhoneNumberCheck()
-  @Post('otp/email/send')
-  async sendEmailOtp(@Req() req: Request & { user: User }) {
-    const result = await this.auth_service.sendEmailOtpForUser(req.user.id);
-    return result;
-  }
-
-  @ApiOperation(verify_email_otp_swagger.operation)
-  @ApiBody({ type: VerifyOtpDTO })
-  @ApiOkResponse(verify_email_otp_swagger.responses.success)
-  @UseGuards(AuthGuard('jwt'))
-  @ApiBearerAuth()
-  @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
-  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
-  @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
-  @ResponseMessage(SUCCESS_MESSAGES.EMAIL_VERIFIED)
-  @SkipPhoneNumberCheck()
-  @Patch('otp/email/verify')
-  async verifyEmailOtp(
-    @Body() verify_otp_dto: VerifyOtpDTO,
-    @Req() req: Request & { user: User },
-  ) {
-    const result = await this.auth_service.verifyEmailOtpForUser(
-      req.user.id,
-      verify_otp_dto.otp,
-    );
-    return result;
-  }
-
-  // ── Public email OTP routes (no JWT — used right after registration) ──────
-
   @ApiOperation({
-    summary: 'Send email verification OTP (public)',
+    summary: 'Send email verification OTP',
     description:
       'Send a verification OTP to the given email. No authentication required. ' +
       'Only works for accounts that are not yet verified.',
@@ -231,13 +193,13 @@ export class AuthController {
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.ACCOUNT_ALREADY_VERIFIED)
   @ResponseMessage(SUCCESS_MESSAGES.OTP_GENERATED)
-  @Post('otp/email/send-public')
-  async sendEmailOtpPublic(@Body() dto: GenerateOtpDTO) {
-    return this.auth_service.sendEmailOtpPublic(dto.email);
+  @Post('otp/email/send')
+  async sendEmailOtp(@Body() dto: GenerateOtpDTO) {
+    return this.auth_service.sendEmailOtp(dto.email);
   }
 
   @ApiOperation({
-    summary: 'Verify email OTP (public)',
+    summary: 'Verify email OTP',
     description:
       'Verify the email OTP using email + OTP. No authentication required. ' +
       'Intended for post-registration flow before a JWT is issued.',
@@ -245,9 +207,9 @@ export class AuthController {
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ResponseMessage(SUCCESS_MESSAGES.EMAIL_VERIFIED)
-  @Patch('otp/email/verify-public')
-  async verifyEmailOtpPublic(@Body() dto: { email: string; otp: string }) {
-    return this.auth_service.verifyEmailOtpPublic(dto.email, dto.otp);
+  @Patch('otp/email/verify')
+  async verifyEmailOtp(@Body() dto: { email: string; otp: string }) {
+    return this.auth_service.verifyEmailOtp(dto.email, dto.otp);
   }
 
   @ApiOperation(send_password_reset_otp_swagger.operation)
@@ -261,6 +223,17 @@ export class AuthController {
       generate_otp_dto.email,
     );
     return result;
+  }
+
+  @ApiOperation({
+    summary: 'Check password reset OTP validity',
+    description: 'Verifies the OTP without consuming it, allowing frontend to proceed to password input.',
+  })
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
+  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
+  @Post('otp/password/check')
+  async checkPasswordResetOtp(@Body() dto: { email: string; otp: string }) {
+    return this.auth_service.checkPasswordResetOtp(dto.email, dto.otp);
   }
 
   @ApiOperation(reset_password_swagger.operation)

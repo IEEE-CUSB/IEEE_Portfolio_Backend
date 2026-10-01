@@ -365,6 +365,7 @@ export class AuthService {
     email: string,
     otp: string,
     purpose: AuthOtpPurpose,
+    consume: boolean = true,
   ): Promise<{ success: boolean }> {
     const user = await this.user_repository.findByEmail(email);
     if (!user) {
@@ -387,43 +388,23 @@ export class AuthService {
       throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
-    // Delete OTP from Redis after successful verification
-    await this.redisService.del(`${otp_prefix}:${user.id}`);
+    if (consume) {
+      // Delete OTP from Redis after successful verification
+      await this.redisService.del(`${otp_prefix}:${user.id}`);
 
-    if (purpose === AuthOtpPurpose.EmailVerification) {
-      await this.user_repository.update(user.id, { verified_email: true });
+      if (purpose === AuthOtpPurpose.EmailVerification) {
+        await this.user_repository.update(user.id, { verified_email: true });
+      }
     }
 
     return { success: true };
   }
 
-  async sendEmailOtpForUser(user_id: string): Promise<{ success: boolean }> {
-    const user = await this.user_repository.findById(user_id);
-    return this.generateOtp(user.email, AuthOtpPurpose.EmailVerification);
-  }
-
-  async verifyEmailOtpForUser(
-    user_id: string,
-    otp: string,
-  ): Promise<{ success: boolean }> {
-    const user = await this.user_repository.findById(user_id);
-    return this.verifyOtp(user.email, otp, AuthOtpPurpose.EmailVerification);
-  }
-
-  /**
-   * Public (no auth) — send email verification OTP by email address.
-   * Intended for use right after registration before a JWT is available.
-   * Only works for unverified accounts (generateOtp enforces this).
-   */
-  async sendEmailOtpPublic(email: string): Promise<{ success: boolean }> {
+  async sendEmailOtp(email: string): Promise<{ success: boolean }> {
     return this.generateOtp(email, AuthOtpPurpose.EmailVerification);
   }
 
-  /**
-   * Public (no auth) — verify email OTP by email + OTP.
-   * Intended for use right after registration before a JWT is available.
-   */
-  async verifyEmailOtpPublic(
+  async verifyEmailOtp(
     email: string,
     otp: string,
   ): Promise<{ success: boolean }> {
@@ -432,6 +413,16 @@ export class AuthService {
 
   async sendPasswordResetOtp(email: string): Promise<{ success: boolean }> {
     return this.generateOtp(email, AuthOtpPurpose.PasswordReset);
+  }
+
+  /**
+   * Public (no auth) — check if password reset OTP is valid without consuming it.
+   */
+  async checkPasswordResetOtp(
+    email: string,
+    otp: string,
+  ): Promise<{ success: boolean }> {
+    return this.verifyOtp(email, otp, AuthOtpPurpose.PasswordReset, false);
   }
 
   async resetPasswordWithOtp(
