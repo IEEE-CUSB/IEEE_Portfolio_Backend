@@ -64,11 +64,19 @@ export class MailService {
    * even when testing locally.
    */
   private getLogoAttachment() {
-    return {
-      filename: 'logo.png',
-      path: require('path').join(process.cwd(), 'public', 'logo.png'),
-      cid: 'ieee_logo' // matches 'cid:ieee_logo' in templates
-    };
+    const fs = require('fs');
+    const path = require('path');
+    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
+    
+    if (fs.existsSync(logoPath)) {
+      return {
+        filename: 'logo.png',
+        path: logoPath,
+        cid: 'ieee_logo' // matches 'cid:ieee_logo' in templates
+      };
+    }
+    this.logger.warn('Logo file not found at: ' + logoPath);
+    return undefined;
   }
 
   async sendRecruitmentResultEmail(
@@ -86,18 +94,18 @@ export class MailService {
 
     const html = buildRecruitmentResultHtml(params); // defaults to cid:ieee_logo
 
-    await this.sendEmail(to, subject, html, undefined, [this.getLogoAttachment()]);
+    await this.sendEmail(to, subject, html, undefined, [this.getLogoAttachment()].filter(Boolean));
   }
 
   async sendEmailVerificationOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Email Verification One-Time Password (OTP)';
     const html = buildEmailVerificationHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()]);
+    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()].filter(Boolean));
   }
 
   async sendPasswordResetOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Password Reset One-Time Password (OTP)';
     const html = buildPasswordResetEmailHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()]);
+    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()].filter(Boolean));
   }
 }

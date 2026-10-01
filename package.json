@@ -45,6 +45,7 @@
     "cookie-parser": "^1.4.7",
     "dotenv": "^18.0.3",
     "exceljs": "^4.4.0",
+    "express": "^5.2.1",
     "file-type": "^22.0.1",
     "ioredis": "^5.9.2",
     "ms": "^2.1.3",
