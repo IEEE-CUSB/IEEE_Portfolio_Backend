@@ -6,8 +6,11 @@ services:
     restart: always
     ports:
       - "80:80"
+    environment:
+      - CLIENT_MAX_BODY_SIZE=50m
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock:ro
+      - ./nginx-proxy.conf:/etc/nginx/vhost.d/default:ro
 
   postgres:
     image: postgres:15-alpine
@@ -67,6 +70,7 @@ services:
       - BB_SECRET_ACCESS_KEY=${MINIO_ROOT_PASSWORD:-admin12345}
       - BB_BUCKET_NAME=${BB_BUCKET_NAME:-ieee-storage}
       - BB_REGION=us-east-1
+      - USE_CLOUDINARY=false
     env_file:
       - .env
     depends_on:
