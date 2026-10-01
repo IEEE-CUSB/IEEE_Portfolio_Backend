@@ -219,6 +219,37 @@ export class AuthController {
     return result;
   }
 
+  // ── Public email OTP routes (no JWT — used right after registration) ──────
+
+  @ApiOperation({
+    summary: 'Send email verification OTP (public)',
+    description:
+      'Send a verification OTP to the given email. No authentication required. ' +
+      'Only works for accounts that are not yet verified.',
+  })
+  @ApiBody({ type: GenerateOtpDTO })
+  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.ACCOUNT_ALREADY_VERIFIED)
+  @ResponseMessage(SUCCESS_MESSAGES.OTP_GENERATED)
+  @Post('otp/email/send-public')
+  async sendEmailOtpPublic(@Body() dto: GenerateOtpDTO) {
+    return this.auth_service.sendEmailOtpPublic(dto.email);
+  }
+
+  @ApiOperation({
+    summary: 'Verify email OTP (public)',
+    description:
+      'Verify the email OTP using email + OTP. No authentication required. ' +
+      'Intended for post-registration flow before a JWT is issued.',
+  })
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
+  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
+  @ResponseMessage(SUCCESS_MESSAGES.EMAIL_VERIFIED)
+  @Patch('otp/email/verify-public')
+  async verifyEmailOtpPublic(@Body() dto: { email: string; otp: string }) {
+    return this.auth_service.verifyEmailOtpPublic(dto.email, dto.otp);
+  }
+
   @ApiOperation(send_password_reset_otp_swagger.operation)
   @ApiBody({ type: GenerateOtpDTO })
   @ApiOkResponse(send_password_reset_otp_swagger.responses.success)

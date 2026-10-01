@@ -410,6 +410,26 @@ export class AuthService {
     return this.verifyOtp(user.email, otp, AuthOtpPurpose.EmailVerification);
   }
 
+  /**
+   * Public (no auth) — send email verification OTP by email address.
+   * Intended for use right after registration before a JWT is available.
+   * Only works for unverified accounts (generateOtp enforces this).
+   */
+  async sendEmailOtpPublic(email: string): Promise<{ success: boolean }> {
+    return this.generateOtp(email, AuthOtpPurpose.EmailVerification);
+  }
+
+  /**
+   * Public (no auth) — verify email OTP by email + OTP.
+   * Intended for use right after registration before a JWT is available.
+   */
+  async verifyEmailOtpPublic(
+    email: string,
+    otp: string,
+  ): Promise<{ success: boolean }> {
+    return this.verifyOtp(email, otp, AuthOtpPurpose.EmailVerification);
+  }
+
   async sendPasswordResetOtp(email: string): Promise<{ success: boolean }> {
     return this.generateOtp(email, AuthOtpPurpose.PasswordReset);
   }
