@@ -53,7 +53,10 @@ export class AdminRecruitmentService {
   async updateVacancy(id: string, dto: UpdateVacancyDto) {
     const { questions, ...vacancyFields } = dto;
 
-    const vacancy = await this.vacanciesRepository.preload({ id, ...dto });
+    const vacancy = await this.vacanciesRepository.preload({
+      id,
+      ...vacancyFields,
+    });
     if (!vacancy) {
       throw new NotFoundException(ERROR_MESSAGES.VACANCY_NOT_FOUND);
     }

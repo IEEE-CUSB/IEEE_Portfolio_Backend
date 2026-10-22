@@ -38,16 +38,11 @@ Content-Type: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjgyMzQ0MWJmLTA3YzMtNDFlYy05N2I3LWI4MWRkOGZlMmFhZSIsImlhdCI6MTc5MjY3NDQ1MCwiZXhwIjoxNzkyNzE3NjUwfQ.ZVeOTml9J9c5hE-V4OoHEZZX83ZK92ugfJWBY3Mfb1w
 
 {
-"questions": [
-    {
-    "question_id": "4277745d-6f64-4003-8198-140dbc99453f",
-    "question_text": "What ",
-    "type": "TEXT",
-    "is_required": true,
-    "order": 1
-    }
-]
+    "questions":[],
+"society": "EMBS"
 }
+
+
 
 ### 3. Get all vacancies
 
@@ -60,7 +55,7 @@ Authorization: Bearer {{login.response.body.access_token}}
 GET {{baseUrl}}/admin/recruitment/vacancies
 Accept: application/json
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjgyMzQ0MWJmLTA3YzMtNDFlYy05N2I3LWI4MWRkOGZlMmFhZSIsImlhdCI6MTc5MjY3NDQ1MCwiZXhwIjoxNzkyNzE3NjUwfQ.ZVeOTml9J9c5hE-V4OoHEZZX83ZK92ugfJWBY3Mfb1w
-
+### 5. Refresh token
 
 POST {{baseUrl}}/auth/refresh
 Content-Type: application/json

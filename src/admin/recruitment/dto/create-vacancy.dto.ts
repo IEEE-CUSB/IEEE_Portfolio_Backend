@@ -15,7 +15,7 @@ import {
   IsOptionalHumanText,
 } from 'src/decorators/human-text.decorator';
 import { QuestionType } from '../../../recruitment/entities/vacancy-question.entity';
-
+import { Society } from '../../../recruitment/enums/society.enum';
 export class VacancyQuestionDto {
   // let it carry the id for update purposes, but not required for creation
   @ApiPropertyOptional()
@@ -92,4 +92,9 @@ export class CreateVacancyDto {
   @Type(() => VacancyQuestionDto)
   @IsOptional()
   questions?: VacancyQuestionDto[];
+
+  @ApiPropertyOptional({ enum: Society })
+  @IsOptional()
+  @IsEnum(Society)
+  society?: Society;
 }
