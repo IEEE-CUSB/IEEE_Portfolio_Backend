@@ -1,4 +1,12 @@
-import { IsOptional, IsBoolean, IsUUID, ValidateNested, IsArray, IsEnum, IsNumber } from 'class-validator';
+import {
+  IsOptional,
+  IsBoolean,
+  IsUUID,
+  ValidateNested,
+  IsArray,
+  IsEnum,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
@@ -9,6 +17,12 @@ import {
 import { QuestionType } from '../../../recruitment/entities/vacancy-question.entity';
 
 export class VacancyQuestionDto {
+  // let it carry the id for update purposes, but not required for creation
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ example: 'What is your experience with NestJS?' })
   @IsHumanText({
     minLength: 1,
@@ -34,6 +48,12 @@ export class VacancyQuestionDto {
   @ApiProperty({ example: 1 })
   @IsNumber()
   order!: number;
+
+  // entity had it but not here
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  allow_multiple_selection?: boolean;
 }
 
 export class CreateVacancyDto {
@@ -58,7 +78,10 @@ export class CreateVacancyDto {
   @IsOptional()
   is_open?: boolean;
 
-  @ApiPropertyOptional({ description: 'Category ID for the vacancy', example: 'uuid-string' })
+  @ApiPropertyOptional({
+    description: 'Category ID for the vacancy',
+    example: 'uuid-string',
+  })
   @IsUUID()
   @IsOptional()
   category_id?: string;

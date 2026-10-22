@@ -53,7 +53,8 @@ export const admin_create_vacancy_swagger = {
 export const admin_update_vacancy_swagger = {
   operation: {
     summary: 'Update a vacancy',
-    description: 'Admins can update a vacancy and toggle its is_open status.',
+    description:
+      'Admins can update a vacancy, change its open status, and manage its application questions. Omit the questions property to leave existing questions unchanged. Send an empty questions array to remove all questions. Send an array of questions to update the question collection. Null or undefined values for question properties will leave those properties unchanged. To remove a question, omit it from the array.',
   },
   responses: {
     success: {
