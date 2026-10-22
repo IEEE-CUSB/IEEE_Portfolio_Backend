@@ -75,11 +75,15 @@ export class RecruitmentController {
   getOpenVacancies(
     @Query('search') search?: string,
     @Query('category_id') category_id?: string,
+    @Query('society') society?: string,
   ) {
-    return this.recruitmentService.getOpenVacancies(search, category_id);
+    return this.recruitmentService.getOpenVacancies(
+      search,
+      category_id,
+      society,
+    );
   }
 
-  
   @Get('vacancies/:id')
   @ApiOperation({ summary: 'Get a specific vacancy by ID' })
   @ApiOkResponse({ description: 'Vacancy details retrieved successfully' })
@@ -90,7 +94,7 @@ export class RecruitmentController {
     return this.recruitmentService.getVacancyById(id);
   }
 
-@Post('vacancies/:id/apply')
+  @Post('vacancies/:id/apply')
   @ApiOperation(apply_to_vacancy_swagger.operation)
   @ApiCreatedResponse(apply_to_vacancy_swagger.responses.success)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.ALREADY_APPLIED_OR_CLOSED)
@@ -152,10 +156,7 @@ export class RecruitmentController {
   @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
   @ApiInternalServerError(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
   @ResponseMessage('File uploaded successfully')
-  async uploadApplicationFile(
-    @UploadedFile() file: any,
-  ) {
+  async uploadApplicationFile(@UploadedFile() file: any) {
     return this.recruitmentService.uploadApplicationFile(file);
   }
 }
-

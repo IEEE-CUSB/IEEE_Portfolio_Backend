@@ -4,11 +4,19 @@ import { RecruitmentModule } from '../../recruitment/recruitment.module';
 import { AdminRecruitmentController } from './admin-recruitment.controller';
 import { AdminRecruitmentService } from './admin-recruitment.service';
 import { MailModule } from '../../mail/mail.module';
-
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { VacancyQuestion } from 'src/recruitment/entities/vacancy-question.entity';
 @Module({
   // Vacancy/Application repositories come from the non-admin module so both
   // sides share one query surface per entity.
-  imports: [RecruitmentModule, StorageModule, MailModule],
+  imports: [
+    RecruitmentModule,
+    StorageModule,
+    MailModule,
+
+    TypeOrmModule.forFeature([VacancyQuestion]),
+  ],
+
   controllers: [AdminRecruitmentController],
   providers: [AdminRecruitmentService],
   exports: [AdminRecruitmentService],

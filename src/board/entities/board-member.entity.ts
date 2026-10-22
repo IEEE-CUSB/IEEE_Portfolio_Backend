@@ -29,6 +29,18 @@ export class BoardMember {
   @Column({ type: 'int', nullable: true })
   display_order!: number;
 
+  @Column({ type: 'text', nullable: true })
+  bio!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  linkedin!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  github!: string | null;
+
+  @Column({ type: 'varchar', nullable: true })
+  twitter!: string | null;
+
   @CreateDateColumn()
   created_at!: Date;
 

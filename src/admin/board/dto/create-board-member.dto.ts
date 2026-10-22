@@ -42,4 +42,38 @@ export class CreateBoardMemberDto {
   @IsInt()
   @IsOptional()
   display_order?: number;
+
+  @ApiProperty({
+    description: 'Bio (optional)',
+    example: 'A brief bio',
+    required: false,
+  })
+  @IsOptional()
+  @IsHumanText({
+    minLength: 2,
+    maxLength: 1000,
+    fieldLabel: 'bio',
+  })
+  bio?: string;
+
+  @ApiProperty({
+    description: 'LinkedIn URL (optional)',
+    required: false,
+  })
+  @IsOptional()
+  linkedin?: string;
+
+  @ApiProperty({
+    description: 'GitHub URL (optional)',
+    required: false,
+  })
+  @IsOptional()
+  github?: string;
+
+  @ApiProperty({
+    description: 'Twitter URL (optional)',
+    required: false,
+  })
+  @IsOptional()
+  twitter?: string;
 }

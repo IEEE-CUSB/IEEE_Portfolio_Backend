@@ -25,12 +25,17 @@ export class VacanciesRepository {
 
     this.applySearch(qb, query.search);
     this.applyCategory(qb, (query as any).category_id);
+    this.applySociety(qb, query.society);
 
     return paginate(qb, query);
   }
 
   /** Public view: open vacancies only. */
-  async findOpen(search?: string, category_id?: string): Promise<Vacancy[]> {
+  async findOpen(
+    search?: string,
+    category_id?: string,
+    society?: string,
+  ): Promise<Vacancy[]> {
     const qb = this.vacanciesRepository
       .createQueryBuilder('vacancy')
       .leftJoinAndSelect('vacancy.category', 'category')
@@ -40,6 +45,7 @@ export class VacanciesRepository {
 
     this.applySearch(qb, search);
     this.applyCategory(qb, category_id);
+    this.applySociety(qb, society);
 
     return qb.getMany();
   }
@@ -66,10 +72,17 @@ export class VacanciesRepository {
     }
   }
 
+  private applySociety(
+    qb: ReturnType<Repository<Vacancy>['createQueryBuilder']>,
+    society?: string,
+  ) {
+    if (society) qb.andWhere('vacancy.society = :society', { society });
+  }
+
   async findById(id: string): Promise<Vacancy | null> {
-    return this.vacanciesRepository.findOne({ 
+    return this.vacanciesRepository.findOne({
       where: { id },
-      relations: ['category', 'questions']
+      relations: ['category', 'questions'],
     });
   }
 

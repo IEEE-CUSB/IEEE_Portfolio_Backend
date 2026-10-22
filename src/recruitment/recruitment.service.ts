@@ -21,11 +21,14 @@ export class RecruitmentService {
     private readonly storageService: StorageService,
   ) {}
 
-  async getOpenVacancies(search?: string, category_id?: string) {
-    return this.vacanciesRepository.findOpen(search, category_id);
+  async getOpenVacancies(
+    search?: string,
+    category_id?: string,
+    society?: string,
+  ) {
+    return this.vacanciesRepository.findOpen(search, category_id, society);
   }
 
-  
   async getVacancyById(id: string) {
     const vacancy = await this.vacanciesRepository.findById(id);
     if (!vacancy) {
@@ -34,14 +37,16 @@ export class RecruitmentService {
     return vacancy;
   }
 
-async applyToVacancy(
+  async applyToVacancy(
     userId: string,
     vacancyId: string,
     dto: ApplyToVacancyDto,
   ) {
     const user = await this.usersRepository.findById(userId);
     if (!user?.cv_file_key) {
-      throw new BadRequestException('You must upload your CV in your profile before applying.');
+      throw new BadRequestException(
+        'You must upload your CV in your profile before applying.',
+      );
     }
 
     const vacancy = await this.vacanciesRepository.findById(vacancyId);
@@ -63,8 +68,14 @@ async applyToVacancy(
     if (vacancy.questions && vacancy.questions.length > 0) {
       const extraData = dto.extra_data || {};
       for (const question of vacancy.questions) {
-        if (question.is_required && !extraData[question.question_text] && !extraData[question.id]) {
-          throw new BadRequestException(`Missing required answer for question: ${question.question_text}`);
+        if (
+          question.is_required &&
+          !extraData[question.question_text] &&
+          !extraData[question.id]
+        ) {
+          throw new BadRequestException(
+            `Missing required answer for question: ${question.question_text}`,
+          );
         }
       }
     }
@@ -100,7 +111,7 @@ async applyToVacancy(
     if (!file) {
       throw new BadRequestException('File is required');
     }
-    
+
     const fileBuffer = file.buffer || file.stream || file.data;
     if (!fileBuffer) {
       throw new BadRequestException('Invalid file format');

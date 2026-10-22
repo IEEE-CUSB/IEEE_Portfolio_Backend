@@ -19,6 +19,9 @@ import * as ExcelJS from 'exceljs';
 import { MediaService } from '../../media/media.service';
 import { resolveMediaFolder } from '../../media/media.utils';
 import { MailService } from '../../mail/mail.service';
+import { VacancyQuestion } from 'src/recruitment/entities/vacancy-question.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 const VACANCIES_MEDIA_FOLDER = resolveMediaFolder(
   'VACANCIES_IMAGES_FILE_NAME',
@@ -38,18 +41,46 @@ export class AdminRecruitmentService {
     private readonly applicationsRepository: ApplicationsRepository,
     private readonly storageService: StorageService,
     private readonly mediaService: MediaService,
+    @InjectRepository(VacancyQuestion)
+    private readonly questionRepo: Repository<VacancyQuestion>,
   ) {}
+
   async createVacancy(dto: CreateVacancyDto) {
     const vacancy = this.vacanciesRepository.create(dto);
     return this.vacanciesRepository.save(vacancy);
   }
 
   async updateVacancy(id: string, dto: UpdateVacancyDto) {
-    const vacancy = await this.vacanciesRepository.preload({ id, ...dto });
+    const { questions, ...vacancyFields } = dto;
+
+    const vacancy = await this.vacanciesRepository.preload({
+      id,
+      ...vacancyFields,
+    });
     if (!vacancy) {
       throw new NotFoundException(ERROR_MESSAGES.VACANCY_NOT_FOUND);
     }
-    return this.vacanciesRepository.save(vacancy);
+
+    await this.vacanciesRepository.save(vacancy);
+
+    // undefined = "client didn't touch questions"; [] = "remove them all"
+    if (questions !== undefined && questions !== null) {
+      const existing = await this.questionRepo.find({
+        where: { vacancy_id: id },
+      });
+      const keepIds = new Set(questions.filter((q) => q.id).map((q) => q.id));
+
+      const toDelete = existing.filter((q) => !keepIds.has(q.id));
+      if (toDelete.length) await this.questionRepo.remove(toDelete);
+
+      await this.questionRepo.save(
+        questions.map((q) =>
+          this.questionRepo.create({ ...q, vacancy_id: id }),
+        ),
+      );
+    }
+
+    return this.vacanciesRepository.findById(id);
   }
 
   async getVacancies(query: VacanciesQueryDto) {

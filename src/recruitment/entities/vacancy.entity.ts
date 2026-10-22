@@ -12,6 +12,7 @@ import { Application } from './application.entity';
 
 import { Category } from '../../categories/entities/category.entity';
 import { VacancyQuestion } from './vacancy-question.entity';
+import { Society } from '../enums/society.enum';
 
 @Entity('vacancies')
 export class Vacancy {
@@ -46,7 +47,9 @@ export class Vacancy {
   @OneToMany(() => Application, (application) => application.vacancy)
   applications!: Application[];
 
-  @OneToMany(() => VacancyQuestion, (question) => question.vacancy, { cascade: true })
+  @OneToMany(() => VacancyQuestion, (question) => question.vacancy, {
+    cascade: true,
+  })
   questions!: VacancyQuestion[];
 
   @CreateDateColumn()
@@ -54,4 +57,7 @@ export class Vacancy {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @Column({ type: 'enum', enum: Society, nullable: true })
+  society!: Society | null;
 }
