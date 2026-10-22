@@ -61,6 +61,8 @@ export class AdminRecruitmentService {
       throw new NotFoundException(ERROR_MESSAGES.VACANCY_NOT_FOUND);
     }
 
+    await this.vacanciesRepository.save(vacancy);
+
     // undefined = "client didn't touch questions"; [] = "remove them all"
     if (questions !== undefined && questions !== null) {
       const existing = await this.questionRepo.find({
