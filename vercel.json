@@ -5,7 +5,7 @@
     "functions": {
         "api/index.ts": {
             "maxDuration": 30,
-            "includeFiles": "public/logo.png"
+            "includeFiles": "{public/logo.png,node_modules/swagger-ui-dist/**}"
         }
     },
     "rewrites": [
