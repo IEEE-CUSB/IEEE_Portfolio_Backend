@@ -14,9 +14,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
 import { Type } from 'class-transformer';
 import { IsHumanText } from 'src/decorators/human-text.decorator';
+import { NormalizeEmail } from 'src/decorators/normalize-email.decorator';
 
 export class RegisterDTO {
   @ApiProperty({ description: 'User email', example: 'wagih123@gmail.com' })
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(STRING_MAX_LENGTH)
