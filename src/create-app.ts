@@ -59,7 +59,17 @@ export async function createApp(): Promise<NestExpressApplication> {
     const config_document = config.build();
 
     const document = SwaggerModule.createDocument(app, config_document);
-    SwaggerModule.setup('api-docs', app, document);
+    SwaggerModule.setup('api-docs', app, document, {
+        customSiteTitle: 'IEEE Backend API Docs',
+        customfavIcon: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/favicon-32x32.png',
+        customJs: [
+            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js',
+            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+        ],
+        customCssUrl: [
+            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css',
+        ],
+    });
 
     return app;
 }

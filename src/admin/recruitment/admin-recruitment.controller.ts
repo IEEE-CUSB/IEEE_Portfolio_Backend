@@ -1,5 +1,6 @@
 import type { Request, Response } from 'express';
-import { Req,  
+import {
+  Req,
   Controller,
   Get,
   Post,
@@ -77,6 +78,7 @@ export class AdminRecruitmentController {
 
   @Patch('vacancies/:id')
   @ApiOperation(admin_update_vacancy_swagger.operation)
+  @ApiBody({ type: UpdateVacancyDto })
   @ApiOkResponse(admin_update_vacancy_swagger.responses.success)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.VACANCY_NOT_FOUND)
   @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)

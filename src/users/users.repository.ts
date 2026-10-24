@@ -29,6 +29,12 @@ export class UsersRepository {
       return user;
     } catch (error) {
       console.error('Error in findById:', error);
+
+      // Avoiding wrapping NotFoundException in InternalServerErrorException
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
       throw new InternalServerErrorException(
         ERROR_MESSAGES.FAILED_TO_FETCH_FROM_DB,
       );
@@ -69,6 +75,12 @@ export class UsersRepository {
     }
   }
 
+  /**
+   * Finds a user by ID and includes their password.
+   * @param id The ID of the user to find.
+   * @param relations The relations to include in the query.
+   * @returns A promise resolving to the found user or throwing an error.
+   */
   async findByIdWithPassword(
     id: string,
     relations: string[] = ['role'],
@@ -88,6 +100,11 @@ export class UsersRepository {
       return user;
     } catch (error) {
       console.error('Error in findByIdWithPassword:', error);
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+
       throw new InternalServerErrorException(
         ERROR_MESSAGES.FAILED_TO_FETCH_FROM_DB,
       );
@@ -136,6 +153,9 @@ export class UsersRepository {
       };
     } catch (error) {
       console.error('Error in delete:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       throw new InternalServerErrorException(
         ERROR_MESSAGES.FAILED_TO_DELETE_FROM_DB,
       );

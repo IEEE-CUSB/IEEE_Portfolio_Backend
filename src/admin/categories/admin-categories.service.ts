@@ -8,7 +8,10 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ERROR_MESSAGES } from 'src/constants/swagger-messages';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category, CategoryType } from 'src/categories/entities/category.entity';
+import {
+  Category,
+  CategoryType,
+} from 'src/categories/entities/category.entity';
 import { Repository } from 'typeorm';
 import { Event } from 'src/events/entities/event.entity';
 import { Workshop } from 'src/workshops/entities/workshop.entity';
@@ -61,15 +64,26 @@ export class AdminCategoriesService {
       throw new NotFoundException(ERROR_MESSAGES.CATEGORY_NOT_FOUND);
     }
 
+    // ! This would return 0 if we added new categories
+    // A fix would be to make it a function that takes a record of category types and their corresponding repositories, and then iterates over them to count usage. But for now, this is fine.
+
     let usageCount = 0;
     if (category.type === CategoryType.EVENT) {
-      usageCount = await this.eventRepo.count({ where: { category_id: id } as any });
+      usageCount = await this.eventRepo.count({
+        where: { category_id: id } as any,
+      });
     } else if (category.type === CategoryType.WORKSHOP) {
-      usageCount = await this.workshopRepo.count({ where: { category_id: id } as any });
+      usageCount = await this.workshopRepo.count({
+        where: { category_id: id } as any,
+      });
     } else if (category.type === CategoryType.RECRUITMENT) {
-      usageCount = await this.vacancyRepo.count({ where: { category_id: id } as any });
+      usageCount = await this.vacancyRepo.count({
+        where: { category_id: id } as any,
+      });
     } else if (category.type === CategoryType.COMMITTEE) {
-      usageCount = await this.committeeRepo.count({ where: { category: { id } } as any });
+      usageCount = await this.committeeRepo.count({
+        where: { category: { id } } as any,
+      });
     }
 
     return { usageCount };
@@ -84,16 +98,23 @@ export class AdminCategoriesService {
 
     // For committees, we don't reassign to "Other". We just delete if not in use.
     if (category.type === CategoryType.COMMITTEE) {
-      const usageCount = await this.committeeRepo.count({ where: { category: { id } } as any });
+      const usageCount = await this.committeeRepo.count({
+        where: { category: { id } } as any,
+      });
       if (usageCount > 0) {
-        throw new ConflictException('Cannot delete category: It is currently used by one or more committees.');
+        throw new ConflictException(
+          'Cannot delete category: It is currently used by one or more committees.',
+        );
       }
       await this.categoriesRepository.remove(category);
       return { message: 'Category deleted successfully' };
     }
 
     // For other types, find or create "Other" category for this type
-    let otherCategory = await this.categoriesRepository.findByNameAndType('Other', category.type);
+    let otherCategory = await this.categoriesRepository.findByNameAndType(
+      'Other',
+      category.type,
+    );
     if (!otherCategory) {
       otherCategory = this.categoriesRepository.create({
         name: 'Other',
@@ -106,11 +127,20 @@ export class AdminCategoriesService {
     // Reassign items
     if (category.id !== otherCategory.id) {
       if (category.type === CategoryType.EVENT) {
-        await this.eventRepo.update({ category_id: category.id } as any, { category_id: otherCategory.id } as any);
+        await this.eventRepo.update(
+          { category_id: category.id } as any,
+          { category_id: otherCategory.id } as any,
+        );
       } else if (category.type === CategoryType.WORKSHOP) {
-        await this.workshopRepo.update({ category_id: category.id } as any, { category_id: otherCategory.id } as any);
+        await this.workshopRepo.update(
+          { category_id: category.id } as any,
+          { category_id: otherCategory.id } as any,
+        );
       } else if (category.type === CategoryType.RECRUITMENT) {
-        await this.vacancyRepo.update({ category_id: category.id } as any, { category_id: otherCategory.id } as any);
+        await this.vacancyRepo.update(
+          { category_id: category.id } as any,
+          { category_id: otherCategory.id } as any,
+        );
       }
     }
 
@@ -125,7 +155,10 @@ export class AdminCategoriesService {
   }
 
   private async assertNameIsFree(name: string, type: string) {
-    const existing = await this.categoriesRepository.findByNameAndType(name, type);
+    const existing = await this.categoriesRepository.findByNameAndType(
+      name,
+      type,
+    );
 
     if (existing) {
       throw new ConflictException(ERROR_MESSAGES.CATEGORY_ALREADY_EXISTS);
