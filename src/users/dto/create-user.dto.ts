@@ -18,6 +18,7 @@ import {
   IsHumanText,
   IsOptionalHumanText,
 } from 'src/decorators/human-text.decorator';
+import { NormalizeEmail } from 'src/decorators/normalize-email.decorator';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -37,6 +38,7 @@ export class CreateUserDto {
     example: 'asazizg1@gmail.com',
     format: 'email',
   })
+  @NormalizeEmail()
   @IsEmail()
   @IsNotEmpty()
   @MaxLength(STRING_MAX_LENGTH)

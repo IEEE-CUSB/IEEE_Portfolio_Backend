@@ -47,7 +47,7 @@ export class UsersRepository {
   ): Promise<User | null> {
     try {
       return await this.userRepository.findOne({
-        where: { email },
+        where: { email: email.trim().toLowerCase() },
         relations,
       });
     } catch (error) {
@@ -112,6 +112,8 @@ export class UsersRepository {
   }
 
   async create(userData: Partial<User>): Promise<User> {
+    if (userData.email) userData.email = userData.email.trim().toLowerCase();
+
     try {
       const user = this.userRepository.create(userData);
       const savedUser = await this.userRepository.save(user);
@@ -128,6 +130,9 @@ export class UsersRepository {
    * @returns Updated user entity
    */
   async update(id: string, updateData: Partial<User>): Promise<User> {
+    if (updateData.email)
+      updateData.email = updateData.email.trim().toLowerCase();
+
     try {
       await this.userRepository.update(id, updateData);
       return await this.findById(id);

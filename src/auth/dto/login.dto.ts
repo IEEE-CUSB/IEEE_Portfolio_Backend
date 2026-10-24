@@ -1,12 +1,18 @@
 import { IsIn, IsNotEmpty, IsString, MaxLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
+import { Transform } from 'class-transformer';
 
 export class LoginDTO {
   @ApiProperty({
     description: 'email, or username of the user',
     example: 'mariorafat10@gmail.com',
     format: 'email',
+  })
+  @Transform(({ value }: { value: unknown }) => {
+    if (typeof value !== 'string') return value;
+    const v = value.trim();
+    return v.includes('@') ? v.toLowerCase() : v;
   })
   @IsString()
   @IsNotEmpty()

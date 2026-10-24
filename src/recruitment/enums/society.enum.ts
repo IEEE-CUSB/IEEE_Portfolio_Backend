@@ -3,4 +3,5 @@ export enum Society {
   PES = 'PES',
   RAS = 'RAS',
   CS = 'CS',
+  MAIN = 'MAIN',
 }

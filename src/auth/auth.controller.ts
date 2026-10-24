@@ -61,6 +61,7 @@ import { ChangePasswordDTO } from './dto/change-password.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { User } from 'src/users/entities/user.entity';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { EmailOtpDTO } from './dto/email-otp.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -208,8 +209,11 @@ export class AuthController {
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ResponseMessage(SUCCESS_MESSAGES.EMAIL_VERIFIED)
   @Patch('otp/email/verify')
-  async verifyEmailOtp(@Body() dto: { email: string; otp: string }) {
-    return this.auth_service.verifyEmailOtp(dto.email, dto.otp);
+  async verifyEmailOtp(@Body() email_otp_dto: EmailOtpDTO) {
+    return this.auth_service.verifyEmailOtp(
+      email_otp_dto.email,
+      email_otp_dto.otp,
+    );
   }
 
   @ApiOperation(send_password_reset_otp_swagger.operation)
@@ -227,13 +231,17 @@ export class AuthController {
 
   @ApiOperation({
     summary: 'Check password reset OTP validity',
-    description: 'Verifies the OTP without consuming it, allowing frontend to proceed to password input.',
+    description:
+      'Verifies the OTP without consuming it, allowing frontend to proceed to password input.',
   })
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @Post('otp/password/check')
-  async checkPasswordResetOtp(@Body() dto: { email: string; otp: string }) {
-    return this.auth_service.checkPasswordResetOtp(dto.email, dto.otp);
+  async checkPasswordResetOtp(@Body() email_otp_dto: EmailOtpDTO) {
+    return this.auth_service.checkPasswordResetOtp(
+      email_otp_dto.email,
+      email_otp_dto.otp,
+    );
   }
 
   @ApiOperation(reset_password_swagger.operation)
