@@ -64,15 +64,12 @@ export class MailService {
    * even when testing locally.
    */
   private getLogoAttachment() {
-    const fs = require('fs');
-    const path = require('path');
-    const logoPath = path.join(process.cwd(), 'public', 'logo.png');
-    
+    const logoPath = path.join(process.cwd(), 'public', logoFile);
     if (fs.existsSync(logoPath)) {
       return {
-        filename: 'logo.png',
+        filename: path.basename(logoFile),
         path: logoPath,
-        cid: 'ieee_logo' // matches 'cid:ieee_logo' in templates
+        cid: 'ieee_logo',
       };
     }
     this.logger.warn('Logo file not found at: ' + logoPath);
@@ -85,27 +82,45 @@ export class MailService {
       name: string;
       decision: RecruitmentDecision;
       vacancyTitle?: string;
+      society?: Society | null;
     },
-  ): Promise<void> {
-    const subject =
-      params.decision === 'accepted'
-        ? 'Congratulations! Your IEEE CUSB application was accepted'
-        : 'Update on your IEEE CUSB application';
+  ) {
+    const branding = getBranding(params.society);
+    const html = buildRecruitmentResultHtml({ ...params, branding });
+    const from = branding.fromName
+      ? `"${branding.fromName}" <${this.configService.get('MAIL_DEFAULT_FROM_ADDRESS')}>`
+      : undefined;
 
-    const html = buildRecruitmentResultHtml(params); // defaults to cid:ieee_logo
-
-    await this.sendEmail(to, subject, html, undefined, [this.getLogoAttachment()].filter(Boolean));
+    await this.sendEmail(
+      to,
+      subject,
+      html,
+      from,
+      [this.getLogoAttachment(branding.logoFile)].filter(Boolean),
+    );
   }
 
   async sendEmailVerificationOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Email Verification One-Time Password (OTP)';
     const html = buildEmailVerificationHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()].filter(Boolean));
+    await this.sendEmail(
+      to,
+      subject,
+      html,
+      this.getAuthFrom(),
+      [this.getLogoAttachment()].filter(Boolean),
+    );
   }
 
   async sendPasswordResetOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Password Reset One-Time Password (OTP)';
     const html = buildPasswordResetEmailHtml({ otp });
-    await this.sendEmail(to, subject, html, this.getAuthFrom(), [this.getLogoAttachment()].filter(Boolean));
+    await this.sendEmail(
+      to,
+      subject,
+      html,
+      this.getAuthFrom(),
+      [this.getLogoAttachment()].filter(Boolean),
+    );
   }
 }
