@@ -37,14 +37,14 @@ export const SOCIETY_BRANDING: Record<Society, Branding> = {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE EMBS CUSB',
     logoFile: 'logos/EMBSlogo.png',
-    accent: '#F79A0F',
+    accent: '#7F2C82',
     fromName: 'IEEE EMBS CUSB',
   },
   [Society.CS]: {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE CS CUSB',
     logoFile: 'logos/CSlogo.png',
-    accent: '#1d4ed8',
+    accent: '#F79A0F',
   },
 };
 
