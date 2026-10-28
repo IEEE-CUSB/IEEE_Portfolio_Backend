@@ -6,6 +6,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { Transporter } from 'nodemailer';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+
 import { MAIL_TRANSPORTER } from './mail.constants';
 import {
   buildRecruitmentResultHtml,
@@ -15,13 +18,16 @@ import {
   buildEmailVerificationHtml,
   buildPasswordResetEmailHtml,
 } from './templates/otp-email.template';
+import { Society } from 'src/recruitment/enums/society.enum';
+import { getBranding } from './society-branding';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
   constructor(
-    @Inject(MAIL_TRANSPORTER) private readonly transporter: Transporter,
+    @Inject(MAIL_TRANSPORTER)
+    private readonly transporter: Transporter,
     private readonly configService: ConfigService,
   ) {}
 
@@ -43,11 +49,16 @@ export class MailService {
         to,
         subject,
         html,
-        attachments,
+        ...(attachments?.length ? { attachments } : {}),
       });
+
       this.logger.log(`Email sent to ${to}${from ? ` from ${from}` : ''}`);
     } catch (error) {
-      this.logger.error(`Could not send email to ${to}`, error as Error);
+      this.logger.error(
+        `Could not send email to ${to}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+
       throw new ServiceUnavailableException('Could not send email');
     }
   }
@@ -60,20 +71,36 @@ export class MailService {
   }
 
   /**
-   * Always attach the local logo.png so it works seamlessly in Gmail
-   * even when testing locally.
+   * Returns the local logo as a CID attachment.
+   *
+   * logoFile is relative to the public directory.
    */
-  private getLogoAttachment() {
-    const logoPath = path.join(process.cwd(), 'public', logoFile);
-    if (fs.existsSync(logoPath)) {
-      return {
-        filename: path.basename(logoFile),
-        path: logoPath,
-        cid: 'ieee_logo',
-      };
+  private getLogoAttachment(logoFile = 'logo.png') {
+    const publicDirectory = path.resolve(process.cwd(), 'public');
+
+    const logoPath = path.resolve(publicDirectory, logoFile);
+
+    // Prevent paths outside public from being accessed.
+    if (
+      logoPath !== publicDirectory &&
+      !logoPath.startsWith(publicDirectory + path.sep)
+    ) {
+      this.logger.warn(`Invalid logo path: ${logoFile}`);
+
+      return undefined;
     }
-    this.logger.warn('Logo file not found at: ' + logoPath);
-    return undefined;
+
+    if (!fs.existsSync(logoPath)) {
+      this.logger.warn(`Logo file not found at: ${logoPath}`);
+
+      return undefined;
+    }
+
+    return {
+      filename: path.basename(logoPath),
+      path: logoPath,
+      cid: 'ieee_logo',
+    };
   }
 
   async sendRecruitmentResultEmail(
@@ -84,43 +111,68 @@ export class MailService {
       vacancyTitle?: string;
       society?: Society | null;
     },
-  ) {
+  ): Promise<void> {
     const branding = getBranding(params.society);
-    const html = buildRecruitmentResultHtml({ ...params, branding });
-    const from = branding.fromName
-      ? `"${branding.fromName}" <${this.configService.get('MAIL_DEFAULT_FROM_ADDRESS')}>`
-      : undefined;
+
+    const subject =
+      params.decision === 'accepted'
+        ? 'Congratulations! Your IEEE CUSB application was accepted'
+        : 'Update on your IEEE CUSB application';
+
+    const html = buildRecruitmentResultHtml({
+      ...params,
+      branding,
+    });
+
+    const fromAddress = this.configService.get<string>(
+      'MAIL_DEFAULT_FROM_ADDRESS',
+    );
+
+    const from =
+      branding.fromName && fromAddress
+        ? `"${branding.fromName}" <${fromAddress}>`
+        : undefined;
+
+    const logoAttachment =
+      this.getLogoAttachment(branding.logoFile) ?? this.getLogoAttachment(); // falls back to public/logo.png
 
     await this.sendEmail(
       to,
       subject,
       html,
       from,
-      [this.getLogoAttachment(branding.logoFile)].filter(Boolean),
+      logoAttachment ? [logoAttachment] : undefined,
     );
   }
 
   async sendEmailVerificationOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Email Verification One-Time Password (OTP)';
+
     const html = buildEmailVerificationHtml({ otp });
+
+    const logoAttachment = this.getLogoAttachment();
+
     await this.sendEmail(
       to,
       subject,
       html,
       this.getAuthFrom(),
-      [this.getLogoAttachment()].filter(Boolean),
+      logoAttachment ? [logoAttachment] : undefined,
     );
   }
 
   async sendPasswordResetOtp(to: string, otp: string): Promise<void> {
     const subject = 'Your Password Reset One-Time Password (OTP)';
     const html = buildPasswordResetEmailHtml({ otp });
+
+    const logoAttachment = this.getLogoAttachment();
+
     await this.sendEmail(
       to,
       subject,
       html,
       this.getAuthFrom(),
-      [this.getLogoAttachment()].filter(Boolean),
+      logoAttachment ? [logoAttachment] : undefined,
     );
   }
 }

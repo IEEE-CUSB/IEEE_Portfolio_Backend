@@ -1,17 +1,17 @@
 {
-    "framework": null,
-    "buildCommand": "npm run build && npm run migration:run && mkdir -p public && echo 'ready' > public/index.html",
-    "outputDirectory": "public",
-    "functions": {
-        "api/index.ts": {
-            "maxDuration": 30,
-            "includeFiles": "{public/logo.png,node_modules/swagger-ui-dist/**}"
-        }
-    },
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/api/index"
-        }
-    ]
+  "framework": null,
+  "buildCommand": "npm run build && npm run migration:run && mkdir -p public && echo 'ready' > public/index.html",
+  "outputDirectory": "public",
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 30,
+      "includeFiles": "{public/logo.png,node_modules/swagger-ui-dist/**,public/logos/**}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/index"
+    }
+  ]
 }

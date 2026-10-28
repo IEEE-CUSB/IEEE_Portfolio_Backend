@@ -18,28 +18,32 @@ export const DEFAULT_BRANDING: Branding = {
 };
 
 export const SOCIETY_BRANDING: Record<Society, Branding> = {
+  [Society.MAIN]: { ...DEFAULT_BRANDING },
   [Society.RAS]: {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE RAS CUSB',
-    logoFile: 'logos/ras.png',
+    logoFile: 'logos/RASlogo.png',
     accent: '#960B2C',
+    fromName: 'IEEE RAS CUSB',
   },
   [Society.PES]: {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE PES CUSB',
-    logoFile: 'logos/pes.png',
+    logoFile: 'logos/PESlogo.png',
     accent: '#559435',
+    fromName: 'IEEE PES CUSB',
   },
   [Society.EMBS]: {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE EMBS CUSB',
-    logoFile: 'logos/embs.png',
+    logoFile: 'logos/EMBSlogo.png',
     accent: '#F79A0F',
+    fromName: 'IEEE EMBS CUSB',
   },
   [Society.CS]: {
     ...DEFAULT_BRANDING,
     displayName: 'IEEE CS CUSB',
-    logoFile: 'logos/cs.png',
+    logoFile: 'logos/CSlogo.png',
     accent: '#1d4ed8',
   },
 };
