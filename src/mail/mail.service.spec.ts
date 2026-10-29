@@ -225,7 +225,7 @@ describe('MailService', () => {
         'Congratulations! Your IEEE CUSB application was accepted',
       );
 
-      expect(sentMail.html).toContain('IEEE RAS CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].displayName);
       expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].accent);
       expect(sentMail.html).toContain('Ahmed');
       expect(sentMail.html).toContain('Software');
@@ -243,7 +243,7 @@ describe('MailService', () => {
         any
       >;
 
-      expect(sentMail.html).toContain('IEEE PES CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.PES].displayName);
       expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.PES].accent);
     });
 
@@ -303,7 +303,7 @@ describe('MailService', () => {
       expect(sentMail.attachments).toBeUndefined();
 
       // The email still renders, even though the logo is missing.
-      expect(sentMail.html).toContain('IEEE RAS CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].displayName);
     });
 
     it('uses the configured sender address for recruitment emails', async () => {
@@ -326,7 +326,9 @@ describe('MailService', () => {
         any
       >;
 
-      expect(sentMail.from).toBe('"IEEE RAS CUSB" <no-reply@ieeecusb.org>');
+      expect(sentMail.from).toBe(
+        `"${SOCIETY_BRANDING[Society.RAS].fromName}" <no-reply@ieeecusb.org>`,
+      );
     });
 
     it('does not construct an invalid sender when the address is missing', async () => {
@@ -342,6 +344,34 @@ describe('MailService', () => {
       >;
 
       expect(sentMail.from).toBeUndefined();
+    });
+
+    it('uses society-specific recruitment sender from env when configured', async () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'MAIL_RECRUITMENT_CS_FROM_ADDRESS') {
+          return 'careers@cs.ieeecusb.org';
+        }
+        if (key === 'MAIL_RECRUITMENT_CS_FROM_NAME') {
+          return 'CS IEEE CUSB Recruitment';
+        }
+        if (key === 'MAIL_DEFAULT_FROM_ADDRESS') {
+          return 'careers@ieeecusb.org';
+        }
+        return undefined;
+      });
+
+      await service.sendRecruitmentResultEmail('user@example.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        society: Society.CS,
+      });
+
+      const sentMail = mockTransporter.sendMail.mock.calls[0][0] as Record<
+        string,
+        any
+      >;
+
+      expect(sentMail.from).toBe('"CS IEEE CUSB Recruitment" <careers@cs.ieeecusb.org>');
     });
   });
 });

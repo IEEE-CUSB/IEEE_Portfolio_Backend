@@ -63,10 +63,48 @@ export class MailService {
     }
   }
 
-  private getAuthFrom(): string | undefined {
-    const name = this.configService.get<string>('MAIL_AUTH_FROM_NAME');
-    const address = this.configService.get<string>('MAIL_AUTH_FROM_ADDRESS');
+  private getAuthFrom(society?: Society | null): string | undefined {
+    const soc = society && society !== Society.MAIN ? society : undefined;
+    const address =
+      (soc && this.configService.get<string>(`MAIL_AUTH_${soc}_FROM_ADDRESS`)) ||
+      this.configService.get<string>('MAIL_AUTH_FROM_ADDRESS');
     if (!address) return undefined;
+
+    const name =
+      (soc && this.configService.get<string>(`MAIL_AUTH_${soc}_FROM_NAME`)) ||
+      this.configService.get<string>('MAIL_AUTH_FROM_NAME');
+    return name ? `"${name}" <${address}>` : address;
+  }
+
+  private getEventsFrom(society?: Society | null): string | undefined {
+    const soc = society && society !== Society.MAIN ? society : undefined;
+    const address =
+      (soc && this.configService.get<string>(`MAIL_EVENTS_${soc}_FROM_ADDRESS`)) ||
+      this.configService.get<string>('MAIL_EVENTS_FROM_ADDRESS');
+    if (!address) return undefined;
+
+    const name =
+      (soc && this.configService.get<string>(`MAIL_EVENTS_${soc}_FROM_NAME`)) ||
+      this.configService.get<string>('MAIL_EVENTS_FROM_NAME');
+    return name ? `"${name}" <${address}>` : address;
+  }
+
+  private getRecruitmentFrom(society?: Society | null): string | undefined {
+    const soc = society && society !== Society.MAIN ? society : undefined;
+    const address =
+      (soc && this.configService.get<string>(`MAIL_RECRUITMENT_${soc}_FROM_ADDRESS`)) ||
+      this.configService.get<string>('MAIL_RECRUITMENT_FROM_ADDRESS') ||
+      this.configService.get<string>('MAIL_DEFAULT_FROM_ADDRESS');
+
+    if (!address) return undefined;
+
+    const branding = getBranding(society);
+    const name =
+      (soc && this.configService.get<string>(`MAIL_RECRUITMENT_${soc}_FROM_NAME`)) ||
+      branding.fromName ||
+      this.configService.get<string>('MAIL_RECRUITMENT_FROM_NAME') ||
+      this.configService.get<string>('MAIL_DEFAULT_FROM_NAME');
+
     return name ? `"${name}" <${address}>` : address;
   }
 
@@ -124,14 +162,7 @@ export class MailService {
       branding,
     });
 
-    const fromAddress = this.configService.get<string>(
-      'MAIL_DEFAULT_FROM_ADDRESS',
-    );
-
-    const from =
-      branding.fromName && fromAddress
-        ? `"${branding.fromName}" <${fromAddress}>`
-        : undefined;
+    const from = this.getRecruitmentFrom(params.society);
 
     const logoAttachment =
       this.getLogoAttachment(branding.logoFile) ?? this.getLogoAttachment(); // falls back to public/logo.png

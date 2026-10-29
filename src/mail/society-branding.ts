@@ -21,30 +21,31 @@ export const SOCIETY_BRANDING: Record<Society, Branding> = {
   [Society.MAIN]: { ...DEFAULT_BRANDING },
   [Society.RAS]: {
     ...DEFAULT_BRANDING,
-    displayName: 'IEEE RAS CUSB',
+    displayName: 'RAS IEEE CUSB',
     logoFile: 'logos/RASlogo.png',
     accent: '#960B2C',
-    fromName: 'IEEE RAS CUSB',
+    fromName: 'RAS IEEE CUSB',
   },
   [Society.PES]: {
     ...DEFAULT_BRANDING,
-    displayName: 'IEEE PES CUSB',
+    displayName: 'PES IEEE CUSB',
     logoFile: 'logos/PESlogo.png',
     accent: '#559435',
-    fromName: 'IEEE PES CUSB',
+    fromName: 'PES IEEE CUSB',
   },
   [Society.EMBS]: {
     ...DEFAULT_BRANDING,
-    displayName: 'IEEE EMBS CUSB',
+    displayName: 'EMBS IEEE CUSB',
     logoFile: 'logos/EMBSlogo.png',
     accent: '#7F2C82',
-    fromName: 'IEEE EMBS CUSB',
+    fromName: 'EMBS IEEE CUSB',
   },
   [Society.CS]: {
     ...DEFAULT_BRANDING,
-    displayName: 'IEEE CS CUSB',
+    displayName: 'CS IEEE CUSB',
     logoFile: 'logos/CSlogo.png',
     accent: '#F79A0F',
+    fromName: 'CS IEEE CUSB',
   },
 };
 

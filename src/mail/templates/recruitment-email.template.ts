@@ -18,8 +18,6 @@ export function buildRecruitmentResultHtml(params: {
   vacancyTitle?: string;
   logoUrl?: string;
 }): string {
-  // const { name, decision, vacancyTitle, logoUrl } = params;
-
   const isAccepted = params.decision === 'accepted';
   const resolvedLogoUrl = params.logoUrl || 'cid:ieee_logo';
   const b = params.branding ?? DEFAULT_BRANDING;
