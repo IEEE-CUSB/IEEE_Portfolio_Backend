@@ -1,3 +1,5 @@
+import { DEFAULT_BRANDING } from '../society-branding';
+import type { Branding } from '../society-branding';
 export type RecruitmentDecision = 'accepted' | 'rejected';
 
 function escapeHtml(unsafe: string): string {
@@ -10,29 +12,35 @@ function escapeHtml(unsafe: string): string {
 }
 
 export function buildRecruitmentResultHtml(params: {
+  branding: Branding;
   name: string;
   decision: RecruitmentDecision;
   vacancyTitle?: string;
   logoUrl?: string;
 }): string {
-  const { name, decision, vacancyTitle, logoUrl } = params;
-  const isAccepted = decision === 'accepted';
-  const resolvedLogoUrl = logoUrl || 'cid:ieee_logo';
-  
-  const safeName = escapeHtml(name);
-  const safeVacancyTitle = vacancyTitle ? escapeHtml(vacancyTitle) : '';
+  const isAccepted = params.decision === 'accepted';
+  const resolvedLogoUrl = params.logoUrl || 'cid:ieee_logo';
+  const b = params.branding ?? DEFAULT_BRANDING;
 
-  const accentColor = isAccepted ? '#00529b' : '#64748b';
-  const badgeBg = isAccepted ? '#dcfce7' : '#f1f5f9';
-  const badgeText = isAccepted ? '#166534' : '#475569';
-  const badgeLabel = isAccepted ? 'Application Accepted' : 'Application Update';
-  
-  const title = isAccepted ? 'Welcome to IEEE CUSB! 🎉' : 'Thank you for applying';
-  
+  const safeName = escapeHtml(params.name);
+  const safeVacancyTitle = params.vacancyTitle
+    ? escapeHtml(params.vacancyTitle)
+    : '';
+
+  const accentColor = isAccepted ? b.accent : '#64748b';
+  const badgeBg = isAccepted ? b.acceptedBadgeBg : '#f1f5f9';
+  const badgeText = isAccepted ? b.acceptedBadgeText : '#475569';
+
+  const badgeLabel = isAccepted ? 'APPLICATION ACCEPTED' : 'APPLICATION UPDATE';
+
+  const title = isAccepted
+    ? `Welcome to ${b.displayName}! 🎉`
+    : 'Thank you for applying';
+
   const intro = isAccepted
-    ? `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>IEEE CUSB</strong>. We are thrilled to let you know that you've been accepted to join the team!`
-    : `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>IEEE CUSB</strong> and for the time and effort you put into your application.`;
-  
+    ? `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong>. We are thrilled to let you know that you've been accepted to join the team!`
+    : `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong> and for the time and effort you put into your application.`;
+
   const secondParagraph = isAccepted
     ? `We'll be reaching out soon with more details about the next steps and your onboarding. We can't wait to see what we build together!`
     : `After carefully reviewing all applications, we won't be moving forward with yours at this time. We really appreciate your interest in joining us and highly encourage you to apply again in future recruitment cycles.`;
@@ -92,7 +100,7 @@ export function buildRecruitmentResultHtml(params: {
               <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
                 <p style="margin: 0; font-size: 16px; line-height: 26px; color: #334155;">
                   Best regards,<br>
-                  <strong style="color: #00529b;">IEEE Cairo University Student Branch</strong>
+                  <strong style="color: ${b.accent};">${escapeHtml(b.displayName)}</strong>
                 </p>
               </div>
             </td>
@@ -105,7 +113,7 @@ export function buildRecruitmentResultHtml(params: {
           <tr>
             <td align="center" style="padding: 32px 24px;">
               <p style="margin: 0; font-size: 13px; color: #94a3b8;">
-                &copy; ${year} IEEE Cairo University Student Branch. All rights reserved.
+                &copy; ${year}  ${escapeHtml(b.displayName)}. All rights reserved.
               </p>
             </td>
           </tr>

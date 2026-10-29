@@ -8,6 +8,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
+import { PASSWORD_MESSAGE, PASSWORD_REGEX } from 'src/constants/password';
 
 export class ResetPasswordDTO {
   @ApiProperty({
@@ -35,9 +36,8 @@ export class ResetPasswordDTO {
   @IsNotEmpty()
   @MinLength(8)
   @MaxLength(STRING_MAX_LENGTH)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message:
-      'Password must contain lowercase, uppercase, number, and special character',
+  @Matches(PASSWORD_REGEX, {
+    message: PASSWORD_MESSAGE,
   })
   password!: string;
 
@@ -49,9 +49,8 @@ export class ResetPasswordDTO {
   @IsNotEmpty()
   @MinLength(8)
   @MaxLength(STRING_MAX_LENGTH)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, {
-    message:
-      'Password must contain lowercase, uppercase, number, and special character',
+  @Matches(PASSWORD_REGEX, {
+    message: PASSWORD_MESSAGE,
   })
   confirmPassword!: string;
 }

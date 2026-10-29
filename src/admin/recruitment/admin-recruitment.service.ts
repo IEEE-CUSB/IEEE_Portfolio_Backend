@@ -167,6 +167,7 @@ export class AdminRecruitmentService {
           name: application.user.name,
           decision: status === 'ACCEPTED' ? 'accepted' : 'rejected',
           vacancyTitle: vacancy?.title,
+          society: vacancy?.society,
         },
       );
       this.logger.log(`Sent ${status} email for application ${application.id}`);

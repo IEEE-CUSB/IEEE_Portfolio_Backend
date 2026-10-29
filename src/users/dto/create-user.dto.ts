@@ -19,6 +19,7 @@ import {
   IsOptionalHumanText,
 } from 'src/decorators/human-text.decorator';
 import { NormalizeEmail } from 'src/decorators/normalize-email.decorator';
+import { PASSWORD_MESSAGE, PASSWORD_REGEX } from 'src/constants/password';
 
 export class CreateUserDto {
   @ApiProperty({
@@ -56,13 +57,9 @@ export class CreateUserDto {
   @IsString()
   @MinLength(8, { message: 'Password is too short' })
   @MaxLength(STRING_MAX_LENGTH)
-  @Matches(
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-    {
-      message:
-        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
-    },
-  )
+  @Matches(PASSWORD_REGEX, {
+    message: PASSWORD_MESSAGE,
+  })
   password!: string;
 
   @ApiProperty({
