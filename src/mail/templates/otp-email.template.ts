@@ -22,8 +22,8 @@ export function buildEmailVerificationHtml(params: {
           
           <!-- Logo Header -->
           <tr>
-            <td align="center" style="padding: 48px 40px 32px 40px;">
-              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none;">
+            <td align="center" style="padding: 48px 40px 32px 40px; text-align: center;">
+              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none; margin: 0 auto;">
             </td>
           </tr>
 
@@ -94,8 +94,8 @@ export function buildPasswordResetEmailHtml(params: {
           
           <!-- Logo Header -->
           <tr>
-            <td align="center" style="padding: 48px 40px 32px 40px;">
-              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none;">
+            <td align="center" style="padding: 48px 40px 32px 40px; text-align: center;">
+              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="150" style="display: block; width: 150px; max-width: 100%; height: auto; outline: none; border: none; margin: 0 auto;">
             </td>
           </tr>
 

@@ -313,12 +313,37 @@ describe('MailService', () => {
       expect(sentMail.html).toContain(DEFAULT_BRANDING.accent);
     });
 
-    it('uses the society logo when the logo file exists', async () => {
+    it('uses the society acceptance banner when accepted and banner exists', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       await service.sendRecruitmentResultEmail('user@example.com', {
         name: 'Ahmed',
         decision: 'accepted',
+        society: Society.RAS,
+      });
+
+      const sentMail = mockTransporter.sendMail.mock.calls[0][0] as Record<
+        string,
+        any
+      >;
+
+      expect(sentMail.attachments).toEqual([
+        expect.objectContaining({
+          filename: 'RASbanner.png',
+          cid: 'ieee_logo',
+        }),
+      ]);
+
+      expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).toContain('Banner');
+    });
+
+    it('falls back to normal logo when rejected for RAS', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      await service.sendRecruitmentResultEmail('user@example.com', {
+        name: 'Ahmed',
+        decision: 'rejected',
         society: Society.RAS,
       });
 
@@ -335,6 +360,7 @@ describe('MailService', () => {
       ]);
 
       expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).not.toContain('Banner');
     });
 
     it('does not attach a logo when the file does not exist', async () => {
