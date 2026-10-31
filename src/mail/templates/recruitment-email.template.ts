@@ -103,7 +103,7 @@ export function buildRecruitmentResultHtml(params: {
   const badgeLabel = isAccepted ? 'APPLICATION ACCEPTED' : 'APPLICATION UPDATE';
 
   const title = isAccepted
-    ? `Welcome to ${b.displayName}! 🎉`
+    ? `Welcome to ${b.displayName}!`
     : 'Thank you for applying';
 
   const intro = isAccepted
@@ -124,11 +124,11 @@ export function buildRecruitmentResultHtml(params: {
               <!-- Message Box -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0; width: 100%;">
                 <tr>
-                  <td style="background-color: #f8fafc; border-left: 4px solid ${accentColor}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px;">
-                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
+                  <td class="message-box" style="background-color: #f8fafc; border-left: 4px solid ${accentColor}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px;">
+                    <p class="message-box-label" style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
                       ${messageBoxLabel}
                     </p>
-                    <div style="font-size: 15px; line-height: 24px; color: #334155;">
+                    <div class="message-content" style="font-size: 15px; line-height: 24px; color: #334155;">
                       ${richHtmlMessage}
                     </div>
                   </td>
@@ -140,13 +140,13 @@ export function buildRecruitmentResultHtml(params: {
   if (isAccepted) {
     if (!hasMessage) {
       secondParagraphHtml = `
-              <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
+              <p class="email-text" style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 We'll be reaching out soon with more details about the next steps and your onboarding. We can't wait to see what we build together!
               </p>`;
     }
   } else {
     secondParagraphHtml = `
-              <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
+              <p class="email-text" style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 After carefully reviewing all applications, we won't be moving forward with yours at this time. We really appreciate your interest in joining us and highly encourage you to apply again in future recruitment cycles.
               </p>`;
   }
@@ -159,13 +159,104 @@ export function buildRecruitmentResultHtml(params: {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>IEEE CUSB Recruitment</title>
+  <style>
+    @media only screen and (max-width: 600px) {
+      .email-outer {
+        padding: 32px 12px 24px 12px !important;
+      }
+
+      .email-card {
+        border-radius: 12px !important;
+      }
+
+      .logo-cell {
+        padding: 28px 24px 20px 24px !important;
+      }
+
+      .logo-image {
+        width: 112px !important;
+      }
+
+      .banner-image {
+        width: 100% !important;
+        max-width: 100% !important;
+      }
+
+      .email-content {
+        padding: 24px 20px 30px 20px !important;
+      }
+
+      .status-badge-wrap {
+        margin-bottom: 18px !important;
+      }
+
+      .status-badge {
+        padding: 5px 12px !important;
+        font-size: 12px !important;
+      }
+
+      .email-title {
+        font-size: 22px !important;
+        line-height: 30px !important;
+        margin-bottom: 18px !important;
+      }
+
+      .email-text {
+        font-size: 15px !important;
+        line-height: 24px !important;
+      }
+
+      .message-box {
+        padding: 14px 16px !important;
+      }
+
+      .message-box-label {
+        font-size: 12px !important;
+      }
+
+      .message-content,
+      .message-content p,
+      .message-content li {
+        font-size: 14px !important;
+        line-height: 22px !important;
+      }
+
+      .signature-wrap {
+        padding-top: 24px !important;
+      }
+
+      .footer-cell {
+        padding: 24px 16px !important;
+      }
+
+      .footer-text {
+        font-size: 12px !important;
+        line-height: 18px !important;
+      }
+    }
+
+    @media only screen and (max-width: 420px) {
+      .email-title {
+        font-size: 20px !important;
+        line-height: 28px !important;
+      }
+
+      .email-content {
+        padding: 20px 16px 24px 16px !important;
+      }
+
+      .status-badge {
+        letter-spacing: 0.3px !important;
+      }
+    }
+  </style>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f4f7fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f4f7fa; width: 100%; margin: 0 auto;">
     <tr>
-      <td align="center" style="padding: 60px 16px 40px 16px;">
+      <td align="center" class="email-outer" style="padding: 60px 16px 40px 16px;">
         <!-- Main Card -->
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; text-align: left;">
+        <table role="presentation" width="100%" class="email-card" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px; background-color: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden; text-align: left;">
           
           <!-- Top Accent Bar -->
           <tr>
@@ -177,41 +268,41 @@ export function buildRecruitmentResultHtml(params: {
               ? `<!-- Banner Header -->
           <tr>
             <td style="padding: 0; line-height: 0; background-color: #ffffff; text-align: center;">
-              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Banner" width="560" style="display: block; width: 100%; max-width: 560px; height: auto; outline: none; border: none; margin: 0 auto;">
+              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Banner" width="560" class="banner-image" style="display: block; width: 100%; max-width: 560px; height: auto; outline: none; border: none; margin: 0 auto;">
             </td>
           </tr>`
               : `<!-- Logo Header -->
           <tr>
-            <td align="center" style="padding: 40px 48px 24px 48px; text-align: center;">
-              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Logo" width="130" style="display: block; width: 130px; max-width: 100%; height: auto; outline: none; border: none; margin: 0 auto;">
+            <td align="center" class="logo-cell" style="padding: 40px 48px 24px 48px; text-align: center;">
+              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Logo" width="130" class="logo-image" style="display: block; width: 130px; max-width: 100%; height: auto; outline: none; border: none; margin: 0 auto;">
             </td>
           </tr>`
           }
 
           <!-- Content -->
           <tr>
-            <td style="padding: ${isBanner ? '36px' : '0'} 48px 40px 48px;">
-              <div style="margin-bottom: 24px;">
-                <span style="display: inline-block; padding: 6px 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: ${badgeText}; background-color: ${badgeBg}; border-radius: 999px;">
+            <td class="email-content" style="padding: ${isBanner ? '36px' : '0'} 48px 40px 48px;">
+              <div class="status-badge-wrap" style="margin-bottom: 24px;">
+                <span class="status-badge" style="display: inline-block; padding: 6px 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: ${badgeText}; background-color: ${badgeBg}; border-radius: 999px;">
                   ${badgeLabel}
                 </span>
               </div>
               
-              <h1 style="margin: 0 0 24px 0; font-size: 26px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; line-height: 34px;">${title}</h1>
+              <h1 class="email-title" style="margin: 0 0 24px 0; font-size: 26px; font-weight: 700; color: #0f172a; letter-spacing: -0.5px; line-height: 34px;">${title}</h1>
               
-              <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
+              <p class="email-text" style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 Hi ${safeName},
               </p>
               
-              <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
+              <p class="email-text" style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 ${intro}
               </p>
               ${messageBoxHtml}
               ${secondParagraphHtml}
               
               <!-- Signature -->
-              <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
-                <p style="margin: 0; font-size: 16px; line-height: 26px; color: #334155;">
+              <div class="signature-wrap" style="border-top: 1px solid #e2e8f0; padding-top: 32px;">
+                <p class="email-text" style="margin: 0; font-size: 16px; line-height: 26px; color: #334155;">
                   Best regards,<br>
                   <strong style="color: ${b.accent};">${escapeHtml(b.displayName)}</strong>
                 </p>
@@ -224,8 +315,8 @@ export function buildRecruitmentResultHtml(params: {
         <!-- Footer -->
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 560px;">
           <tr>
-            <td align="center" style="padding: 32px 24px;">
-              <p style="margin: 0; font-size: 13px; color: #94a3b8;">
+            <td align="center" class="footer-cell" style="padding: 32px 24px;">
+              <p class="footer-text" style="margin: 0; font-size: 13px; color: #94a3b8;">
                 &copy; ${year}  ${escapeHtml(b.displayName)}. All rights reserved.
               </p>
             </td>
