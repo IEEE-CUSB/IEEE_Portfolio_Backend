@@ -11,6 +11,72 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, '&#039;');
 }
 
+export function formatRichHtmlMessage(
+  rawHtml: string,
+  accentColor: string,
+): string {
+  if (!rawHtml) return '';
+
+  // Clean empty tags and &nbsp; to detect whether there is actual text content
+  const plainText = rawHtml
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+  if (!plainText) return '';
+
+  // Strip dangerous tags and attributes
+  let clean = rawHtml
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<(iframe|object|embed)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, '')
+    .replace(/\s+href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, '')
+    .replace(/&nbsp;/g, ' ');
+
+  // If input was plain text without HTML tags, wrap it properly
+  if (!/<[a-z][\s\S]*>/i.test(clean)) {
+    return `<p style="margin: 0; font-size: 15px; line-height: 24px; color: #334155;">${escapeHtml(clean).replace(/\r?\n/g, '<br>')}</p>`;
+  }
+
+  // Format rich HTML elements for email client rendering
+  clean = clean
+    .replace(
+      /<p(\s*|\s+[^>]*)>/gi,
+      '<p style="margin: 0 0 10px 0; font-size: 15px; line-height: 24px; color: #334155;">',
+    )
+    .replace(
+      /<ul(\s*|\s+[^>]*)>/gi,
+      '<ul style="margin: 0 0 12px 0; padding-left: 20px; color: #334155;">',
+    )
+    .replace(
+      /<ol(\s*|\s+[^>]*)>/gi,
+      '<ol style="margin: 0 0 12px 0; padding-left: 20px; color: #334155;">',
+    )
+    .replace(
+      /<li(\s*|\s+[^>]*)>/gi,
+      '<li style="margin-bottom: 4px; font-size: 15px; line-height: 22px;">',
+    )
+    .replace(
+      /<h1(\s*|\s+[^>]*)>/gi,
+      '<h1 style="margin: 14px 0 8px 0; font-size: 20px; font-weight: 700; color: #0f172a; line-height: 28px;">',
+    )
+    .replace(
+      /<h2(\s*|\s+[^>]*)>/gi,
+      '<h2 style="margin: 12px 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 26px;">',
+    )
+    .replace(
+      /<h3(\s*|\s+[^>]*)>/gi,
+      '<h3 style="margin: 10px 0 4px 0; font-size: 16px; font-weight: 600; color: #0f172a; line-height: 24px;">',
+    )
+    .replace(
+      /<a\s+(?:[^>]*?\s+)?href=(['"])(.*?)\1([^>]*)>/gi,
+      `<a href="$2" target="_blank" rel="noopener noreferrer" style="color: ${accentColor}; text-decoration: underline; font-weight: 500;"$3>`,
+    );
+
+  return clean;
+}
+
 export function buildRecruitmentResultHtml(params: {
   branding: Branding;
   name: string;
@@ -42,23 +108,22 @@ export function buildRecruitmentResultHtml(params: {
     ? `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong>. We are thrilled to let you know that you've been accepted to join the team!`
     : `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong> and for the time and effort you put into your application.`;
 
-  const trimmedMessage = params.message?.trim();
-  const safeCustomMessage = trimmedMessage
-    ? escapeHtml(trimmedMessage).replace(/\r?\n/g, '<br>')
+  const richHtmlMessage = params.message
+    ? formatRichHtmlMessage(params.message, accentColor)
     : '';
 
-  const messageBoxHtml = safeCustomMessage
+  const messageBoxHtml = richHtmlMessage
     ? `
               <!-- Message Box -->
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0; width: 100%;">
                 <tr>
                   <td style="background-color: #f8fafc; border-left: 4px solid ${accentColor}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px;">
-                    <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
+                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
                       Message from the Team
                     </p>
-                    <p style="margin: 0; font-size: 15px; line-height: 24px; color: #334155;">
-                      ${safeCustomMessage}
-                    </p>
+                    <div style="font-size: 15px; line-height: 24px; color: #334155;">
+                      ${richHtmlMessage}
+                    </div>
                   </td>
                 </tr>
               </table>`

@@ -138,38 +138,48 @@ describe('MailService', () => {
         name: 'Ahmed',
         decision: 'accepted',
         vacancyTitle: 'Software Engineer',
-        message: 'Welcome! Please check your calendar for the onboarding session.',
+        message:
+          '<p>Welcome! We are excited to have you.</p><ul><li>Meeting at 5 PM</li></ul>',
       });
       const html: string = mockTransporter.sendMail.mock.calls[0][0]
         .html as string;
       expect(html).toContain('Message from the Team');
-      expect(html).toContain(
-        'Welcome! Please check your calendar for the onboarding session.',
-      );
+      expect(html).toContain('Welcome! We are excited to have you.');
+      expect(html).toContain('Meeting at 5 PM');
+      expect(html).toContain('<ul');
     });
 
-    it('HTML-escapes dangerous characters and formats line breaks in custom message', async () => {
+    it('strips dangerous scripts and event handlers from rich HTML message', async () => {
       mockTransporter.sendMail.mockResolvedValueOnce({});
       await service.sendRecruitmentResultEmail('u@x.com', {
         name: 'Ahmed',
         decision: 'accepted',
-        message: 'Line 1\nLine 2 <img src=x onerror=alert(1)>',
+        message:
+          '<p>Valid content</p><script>alert(1)</script><img src=x onerror=alert(1)>',
       });
       const html: string = mockTransporter.sendMail.mock.calls[0][0]
         .html as string;
-      expect(html).toContain('Line 1<br>Line 2');
-      expect(html).not.toContain('<img src=x');
-      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+      expect(html).toContain('Valid content');
+      expect(html).not.toContain('<script>');
+      expect(html).not.toContain('onerror=');
     });
 
-    it('does not render message box when message is omitted or empty', async () => {
-      mockTransporter.sendMail.mockResolvedValueOnce({});
+    it('does not render message box when message is omitted, empty, or empty Quill HTML', async () => {
+      mockTransporter.sendMail.mockResolvedValue({});
       await service.sendRecruitmentResultEmail('u@x.com', {
         name: 'Ahmed',
         decision: 'accepted',
       });
-      const html: string = mockTransporter.sendMail.mock.calls[0][0]
-        .html as string;
+      let html: string = mockTransporter.sendMail.mock.calls[0][0].html as string;
+      expect(html).not.toContain('Message from the Team');
+
+      mockTransporter.sendMail.mockClear();
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message: '<p><br></p>',
+      });
+      html = mockTransporter.sendMail.mock.calls[0][0].html as string;
       expect(html).not.toContain('Message from the Team');
     });
   });
