@@ -11,16 +11,85 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, '&#039;');
 }
 
+export function formatRichHtmlMessage(
+  rawHtml: string,
+  accentColor: string,
+): string {
+  if (!rawHtml) return '';
+
+  // Clean empty tags and &nbsp; to detect whether there is actual text content
+  const plainText = rawHtml
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+
+  if (!plainText) return '';
+
+  // Strip dangerous tags and attributes
+  let clean = rawHtml
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/<(iframe|object|embed)\b[^<]*(?:(?!<\/\1>)<[^<]*)*<\/\1>/gi, '')
+    .replace(/\s+on[a-z]+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, '')
+    .replace(/\s+href\s*=\s*(['"])\s*javascript:[^'"]*\1/gi, '')
+    .replace(/&nbsp;/g, ' ');
+
+  // If input was plain text without HTML tags, wrap it properly
+  if (!/<[a-z][\s\S]*>/i.test(clean)) {
+    return `<p style="margin: 0; font-size: 15px; line-height: 24px; color: #334155;">${escapeHtml(clean).replace(/\r?\n/g, '<br>')}</p>`;
+  }
+
+  // Format rich HTML elements for email client rendering
+  clean = clean
+    .replace(
+      /<p(\s*|\s+[^>]*)>/gi,
+      '<p style="margin: 0 0 10px 0; font-size: 15px; line-height: 24px; color: #334155;">',
+    )
+    .replace(
+      /<ul(\s*|\s+[^>]*)>/gi,
+      '<ul style="margin: 0 0 12px 0; padding-left: 20px; color: #334155;">',
+    )
+    .replace(
+      /<ol(\s*|\s+[^>]*)>/gi,
+      '<ol style="margin: 0 0 12px 0; padding-left: 20px; color: #334155;">',
+    )
+    .replace(
+      /<li(\s*|\s+[^>]*)>/gi,
+      '<li style="margin-bottom: 4px; font-size: 15px; line-height: 22px;">',
+    )
+    .replace(
+      /<h1(\s*|\s+[^>]*)>/gi,
+      '<h1 style="margin: 14px 0 8px 0; font-size: 20px; font-weight: 700; color: #0f172a; line-height: 28px;">',
+    )
+    .replace(
+      /<h2(\s*|\s+[^>]*)>/gi,
+      '<h2 style="margin: 12px 0 6px 0; font-size: 18px; font-weight: 700; color: #0f172a; line-height: 26px;">',
+    )
+    .replace(
+      /<h3(\s*|\s+[^>]*)>/gi,
+      '<h3 style="margin: 10px 0 4px 0; font-size: 16px; font-weight: 600; color: #0f172a; line-height: 24px;">',
+    )
+    .replace(
+      /<a\s+(?:[^>]*?\s+)?href=(['"])(.*?)\1([^>]*)>/gi,
+      `<a href="$2" target="_blank" rel="noopener noreferrer" style="color: ${accentColor}; text-decoration: underline; font-weight: 500;"$3>`,
+    );
+
+  return clean;
+}
+
 export function buildRecruitmentResultHtml(params: {
   branding: Branding;
   name: string;
   decision: RecruitmentDecision;
   vacancyTitle?: string;
   logoUrl?: string;
+  isBanner?: boolean;
+  message?: string;
 }): string {
   const isAccepted = params.decision === 'accepted';
   const resolvedLogoUrl = params.logoUrl || 'cid:ieee_logo';
   const b = params.branding ?? DEFAULT_BRANDING;
+  const isBanner = Boolean(params.isBanner);
 
   const safeName = escapeHtml(params.name);
   const safeVacancyTitle = params.vacancyTitle
@@ -41,9 +110,46 @@ export function buildRecruitmentResultHtml(params: {
     ? `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong>. We are thrilled to let you know that you've been accepted to join the team!`
     : `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong> and for the time and effort you put into your application.`;
 
-  const secondParagraph = isAccepted
-    ? `We'll be reaching out soon with more details about the next steps and your onboarding. We can't wait to see what we build together!`
-    : `After carefully reviewing all applications, we won't be moving forward with yours at this time. We really appreciate your interest in joining us and highly encourage you to apply again in future recruitment cycles.`;
+  const richHtmlMessage = params.message
+    ? formatRichHtmlMessage(params.message, accentColor)
+    : '';
+  const hasMessage = Boolean(richHtmlMessage);
+
+  const messageBoxLabel = isAccepted
+    ? 'Message from the Team'
+    : 'Feedback / Notes from the Team';
+
+  const messageBoxHtml = richHtmlMessage
+    ? `
+              <!-- Message Box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0; width: 100%;">
+                <tr>
+                  <td style="background-color: #f8fafc; border-left: 4px solid ${accentColor}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px;">
+                    <p style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
+                      ${messageBoxLabel}
+                    </p>
+                    <div style="font-size: 15px; line-height: 24px; color: #334155;">
+                      ${richHtmlMessage}
+                    </div>
+                  </td>
+                </tr>
+              </table>`
+    : '';
+
+  let secondParagraphHtml = '';
+  if (isAccepted) {
+    if (!hasMessage) {
+      secondParagraphHtml = `
+              <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
+                We'll be reaching out soon with more details about the next steps and your onboarding. We can't wait to see what we build together!
+              </p>`;
+    }
+  } else {
+    secondParagraphHtml = `
+              <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
+                After carefully reviewing all applications, we won't be moving forward with yours at this time. We really appreciate your interest in joining us and highly encourage you to apply again in future recruitment cycles.
+              </p>`;
+  }
 
   const year = new Date().getFullYear();
 
@@ -66,16 +172,25 @@ export function buildRecruitmentResultHtml(params: {
             <td style="height: 6px; background-color: ${accentColor}; width: 100%;"></td>
           </tr>
 
-          <!-- Logo Header -->
+          ${
+            isBanner
+              ? `<!-- Banner Header -->
           <tr>
-            <td style="padding: 40px 48px 24px 48px;">
-              <img src="${resolvedLogoUrl}" alt="IEEE CUSB Logo" width="130" style="display: block; width: 130px; max-width: 100%; height: auto; outline: none; border: none;">
+            <td style="padding: 0; line-height: 0; background-color: #ffffff; text-align: center;">
+              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Banner" width="560" style="display: block; width: 100%; max-width: 560px; height: auto; outline: none; border: none; margin: 0 auto;">
             </td>
-          </tr>
+          </tr>`
+              : `<!-- Logo Header -->
+          <tr>
+            <td align="center" style="padding: 40px 48px 24px 48px; text-align: center;">
+              <img src="${resolvedLogoUrl}" alt="${escapeHtml(b.displayName)} Logo" width="130" style="display: block; width: 130px; max-width: 100%; height: auto; outline: none; border: none; margin: 0 auto;">
+            </td>
+          </tr>`
+          }
 
           <!-- Content -->
           <tr>
-            <td style="padding: 0 48px 40px 48px;">
+            <td style="padding: ${isBanner ? '36px' : '0'} 48px 40px 48px;">
               <div style="margin-bottom: 24px;">
                 <span style="display: inline-block; padding: 6px 14px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px; color: ${badgeText}; background-color: ${badgeBg}; border-radius: 999px;">
                   ${badgeLabel}
@@ -91,10 +206,8 @@ export function buildRecruitmentResultHtml(params: {
               <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 ${intro}
               </p>
-              
-              <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
-                ${secondParagraph}
-              </p>
+              ${messageBoxHtml}
+              ${secondParagraphHtml}
               
               <!-- Signature -->
               <div style="border-top: 1px solid #e2e8f0; padding-top: 32px;">

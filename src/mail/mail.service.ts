@@ -148,24 +148,34 @@ export class MailService {
       decision: RecruitmentDecision;
       vacancyTitle?: string;
       society?: Society | null;
+      message?: string;
     },
   ): Promise<void> {
     const branding = getBranding(params.society);
 
+    const isAccepted = params.decision === 'accepted';
+    const useBanner = isAccepted && Boolean(branding.acceptanceBannerFile);
+    const headerImageFile = useBanner
+      ? branding.acceptanceBannerFile
+      : branding.logoFile;
+
     const subject =
-      params.decision === 'accepted'
+      isAccepted
         ? 'Congratulations! Your IEEE CUSB application was accepted'
         : 'Update on your IEEE CUSB application';
 
     const html = buildRecruitmentResultHtml({
       ...params,
       branding,
+      isBanner: useBanner,
     });
 
     const from = this.getRecruitmentFrom(params.society);
 
     const logoAttachment =
-      this.getLogoAttachment(branding.logoFile) ?? this.getLogoAttachment(); // falls back to public/logo.png
+      this.getLogoAttachment(headerImageFile) ??
+      this.getLogoAttachment(branding.logoFile) ??
+      this.getLogoAttachment(); // falls back to public/logo.png
 
     await this.sendEmail(
       to,

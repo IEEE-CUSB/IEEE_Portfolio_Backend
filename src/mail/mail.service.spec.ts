@@ -131,6 +131,57 @@ describe('MailService', () => {
       expect(html).not.toContain('<script>');
       expect(html).toContain('&lt;script&gt;');
     });
+
+    it('renders custom message inside message box when message is provided', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        vacancyTitle: 'Software Engineer',
+        message:
+          '<p>Welcome! We are excited to have you.</p><ul><li>Meeting at 5 PM</li></ul>',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Message from the Team');
+      expect(html).toContain('Welcome! We are excited to have you.');
+      expect(html).toContain('Meeting at 5 PM');
+      expect(html).toContain('<ul');
+    });
+
+    it('strips dangerous scripts and event handlers from rich HTML message', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message:
+          '<p>Valid content</p><script>alert(1)</script><img src=x onerror=alert(1)>',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Valid content');
+      expect(html).not.toContain('<script>');
+      expect(html).not.toContain('onerror=');
+    });
+
+    it('does not render message box when message is omitted, empty, or empty Quill HTML', async () => {
+      mockTransporter.sendMail.mockResolvedValue({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+      });
+      let html: string = mockTransporter.sendMail.mock.calls[0][0].html as string;
+      expect(html).not.toContain('Message from the Team');
+
+      mockTransporter.sendMail.mockClear();
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message: '<p><br></p>',
+      });
+      html = mockTransporter.sendMail.mock.calls[0][0].html as string;
+      expect(html).not.toContain('Message from the Team');
+    });
   });
 
   // ─── sendEmailVerificationOtp ─────────────────────────────────────────────
@@ -262,12 +313,37 @@ describe('MailService', () => {
       expect(sentMail.html).toContain(DEFAULT_BRANDING.accent);
     });
 
-    it('uses the society logo when the logo file exists', async () => {
+    it('uses the society acceptance banner when accepted and banner exists', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       await service.sendRecruitmentResultEmail('user@example.com', {
         name: 'Ahmed',
         decision: 'accepted',
+        society: Society.RAS,
+      });
+
+      const sentMail = mockTransporter.sendMail.mock.calls[0][0] as Record<
+        string,
+        any
+      >;
+
+      expect(sentMail.attachments).toEqual([
+        expect.objectContaining({
+          filename: 'RASbanner.png',
+          cid: 'ieee_logo',
+        }),
+      ]);
+
+      expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).toContain('Banner');
+    });
+
+    it('falls back to normal logo when rejected for RAS', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      await service.sendRecruitmentResultEmail('user@example.com', {
+        name: 'Ahmed',
+        decision: 'rejected',
         society: Society.RAS,
       });
 
@@ -284,6 +360,7 @@ describe('MailService', () => {
       ]);
 
       expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).not.toContain('Banner');
     });
 
     it('does not attach a logo when the file does not exist', async () => {
