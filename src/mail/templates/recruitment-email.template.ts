@@ -17,6 +17,7 @@ export function buildRecruitmentResultHtml(params: {
   decision: RecruitmentDecision;
   vacancyTitle?: string;
   logoUrl?: string;
+  message?: string;
 }): string {
   const isAccepted = params.decision === 'accepted';
   const resolvedLogoUrl = params.logoUrl || 'cid:ieee_logo';
@@ -40,6 +41,28 @@ export function buildRecruitmentResultHtml(params: {
   const intro = isAccepted
     ? `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong>. We are thrilled to let you know that you've been accepted to join the team!`
     : `Thank you for applying${safeVacancyTitle ? ` to the <strong>${safeVacancyTitle}</strong> team` : ''} at <strong>${escapeHtml(b.displayName)}</strong> and for the time and effort you put into your application.`;
+
+  const trimmedMessage = params.message?.trim();
+  const safeCustomMessage = trimmedMessage
+    ? escapeHtml(trimmedMessage).replace(/\r?\n/g, '<br>')
+    : '';
+
+  const messageBoxHtml = safeCustomMessage
+    ? `
+              <!-- Message Box -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 24px 0; width: 100%;">
+                <tr>
+                  <td style="background-color: #f8fafc; border-left: 4px solid ${accentColor}; border-top: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-radius: 8px; padding: 18px 22px;">
+                    <p style="margin: 0 0 8px 0; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: ${accentColor};">
+                      Message from the Team
+                    </p>
+                    <p style="margin: 0; font-size: 15px; line-height: 24px; color: #334155;">
+                      ${safeCustomMessage}
+                    </p>
+                  </td>
+                </tr>
+              </table>`
+    : '';
 
   const secondParagraph = isAccepted
     ? `We'll be reaching out soon with more details about the next steps and your onboarding. We can't wait to see what we build together!`
@@ -91,7 +114,7 @@ export function buildRecruitmentResultHtml(params: {
               <p style="margin: 0 0 20px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 ${intro}
               </p>
-              
+              ${messageBoxHtml}
               <p style="margin: 0 0 40px 0; font-size: 16px; line-height: 26px; color: #334155;">
                 ${secondParagraph}
               </p>

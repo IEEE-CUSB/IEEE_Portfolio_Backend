@@ -148,6 +148,7 @@ export class MailService {
       decision: RecruitmentDecision;
       vacancyTitle?: string;
       society?: Society | null;
+      message?: string;
     },
   ): Promise<void> {
     const branding = getBranding(params.society);

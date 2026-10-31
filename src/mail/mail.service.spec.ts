@@ -131,6 +131,47 @@ describe('MailService', () => {
       expect(html).not.toContain('<script>');
       expect(html).toContain('&lt;script&gt;');
     });
+
+    it('renders custom message inside message box when message is provided', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        vacancyTitle: 'Software Engineer',
+        message: 'Welcome! Please check your calendar for the onboarding session.',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Message from the Team');
+      expect(html).toContain(
+        'Welcome! Please check your calendar for the onboarding session.',
+      );
+    });
+
+    it('HTML-escapes dangerous characters and formats line breaks in custom message', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message: 'Line 1\nLine 2 <img src=x onerror=alert(1)>',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Line 1<br>Line 2');
+      expect(html).not.toContain('<img src=x');
+      expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
+
+    it('does not render message box when message is omitted or empty', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).not.toContain('Message from the Team');
+    });
   });
 
   // ─── sendEmailVerificationOtp ─────────────────────────────────────────────
