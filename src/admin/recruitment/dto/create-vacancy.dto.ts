@@ -31,6 +31,11 @@ export class VacancyQuestionDto {
   @IsBoolean()
   is_required?: boolean;
 
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  allow_multiple_selection?: boolean;
+
   @ApiProperty({ example: 1 })
   @IsNumber()
   order!: number;

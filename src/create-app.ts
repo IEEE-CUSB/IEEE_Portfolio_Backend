@@ -14,6 +14,7 @@ export async function createApp(): Promise<NestExpressApplication> {
     app.useStaticAssets(join(__dirname, '..', 'public'));
     app.useGlobalPipes(
         new ValidationPipe({
+            whitelist: true,
             transform: true,
             transformOptions: {
                 exposeDefaultValues: true,
