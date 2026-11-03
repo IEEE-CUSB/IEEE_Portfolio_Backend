@@ -131,6 +131,57 @@ describe('MailService', () => {
       expect(html).not.toContain('<script>');
       expect(html).toContain('&lt;script&gt;');
     });
+
+    it('renders custom message inside message box when message is provided', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        vacancyTitle: 'Software Engineer',
+        message:
+          '<p>Welcome! We are excited to have you.</p><ul><li>Meeting at 5 PM</li></ul>',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Message from the Team');
+      expect(html).toContain('Welcome! We are excited to have you.');
+      expect(html).toContain('Meeting at 5 PM');
+      expect(html).toContain('<ul');
+    });
+
+    it('strips dangerous scripts and event handlers from rich HTML message', async () => {
+      mockTransporter.sendMail.mockResolvedValueOnce({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message:
+          '<p>Valid content</p><script>alert(1)</script><img src=x onerror=alert(1)>',
+      });
+      const html: string = mockTransporter.sendMail.mock.calls[0][0]
+        .html as string;
+      expect(html).toContain('Valid content');
+      expect(html).not.toContain('<script>');
+      expect(html).not.toContain('onerror=');
+    });
+
+    it('does not render message box when message is omitted, empty, or empty Quill HTML', async () => {
+      mockTransporter.sendMail.mockResolvedValue({});
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+      });
+      let html: string = mockTransporter.sendMail.mock.calls[0][0].html as string;
+      expect(html).not.toContain('Message from the Team');
+
+      mockTransporter.sendMail.mockClear();
+      await service.sendRecruitmentResultEmail('u@x.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        message: '<p><br></p>',
+      });
+      html = mockTransporter.sendMail.mock.calls[0][0].html as string;
+      expect(html).not.toContain('Message from the Team');
+    });
   });
 
   // ─── sendEmailVerificationOtp ─────────────────────────────────────────────
@@ -225,7 +276,7 @@ describe('MailService', () => {
         'Congratulations! Your IEEE CUSB application was accepted',
       );
 
-      expect(sentMail.html).toContain('IEEE RAS CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].displayName);
       expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].accent);
       expect(sentMail.html).toContain('Ahmed');
       expect(sentMail.html).toContain('Software');
@@ -243,7 +294,7 @@ describe('MailService', () => {
         any
       >;
 
-      expect(sentMail.html).toContain('IEEE PES CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.PES].displayName);
       expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.PES].accent);
     });
 
@@ -262,12 +313,37 @@ describe('MailService', () => {
       expect(sentMail.html).toContain(DEFAULT_BRANDING.accent);
     });
 
-    it('uses the society logo when the logo file exists', async () => {
+    it('uses the society acceptance banner when accepted and banner exists', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       await service.sendRecruitmentResultEmail('user@example.com', {
         name: 'Ahmed',
         decision: 'accepted',
+        society: Society.RAS,
+      });
+
+      const sentMail = mockTransporter.sendMail.mock.calls[0][0] as Record<
+        string,
+        any
+      >;
+
+      expect(sentMail.attachments).toEqual([
+        expect.objectContaining({
+          filename: 'RASbanner.png',
+          cid: 'ieee_logo',
+        }),
+      ]);
+
+      expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).toContain('Banner');
+    });
+
+    it('falls back to normal logo when rejected for RAS', async () => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+
+      await service.sendRecruitmentResultEmail('user@example.com', {
+        name: 'Ahmed',
+        decision: 'rejected',
         society: Society.RAS,
       });
 
@@ -284,6 +360,7 @@ describe('MailService', () => {
       ]);
 
       expect(sentMail.html).toContain('cid:ieee_logo');
+      expect(sentMail.html).not.toContain('Banner');
     });
 
     it('does not attach a logo when the file does not exist', async () => {
@@ -303,7 +380,7 @@ describe('MailService', () => {
       expect(sentMail.attachments).toBeUndefined();
 
       // The email still renders, even though the logo is missing.
-      expect(sentMail.html).toContain('IEEE RAS CUSB');
+      expect(sentMail.html).toContain(SOCIETY_BRANDING[Society.RAS].displayName);
     });
 
     it('uses the configured sender address for recruitment emails', async () => {
@@ -326,7 +403,9 @@ describe('MailService', () => {
         any
       >;
 
-      expect(sentMail.from).toBe('"IEEE RAS CUSB" <no-reply@ieeecusb.org>');
+      expect(sentMail.from).toBe(
+        `"${SOCIETY_BRANDING[Society.RAS].fromName}" <no-reply@ieeecusb.org>`,
+      );
     });
 
     it('does not construct an invalid sender when the address is missing', async () => {
@@ -342,6 +421,34 @@ describe('MailService', () => {
       >;
 
       expect(sentMail.from).toBeUndefined();
+    });
+
+    it('uses society-specific recruitment sender from env when configured', async () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'MAIL_RECRUITMENT_CS_FROM_ADDRESS') {
+          return 'careers@cs.ieeecusb.org';
+        }
+        if (key === 'MAIL_RECRUITMENT_CS_FROM_NAME') {
+          return 'CS IEEE CUSB Recruitment';
+        }
+        if (key === 'MAIL_DEFAULT_FROM_ADDRESS') {
+          return 'careers@ieeecusb.org';
+        }
+        return undefined;
+      });
+
+      await service.sendRecruitmentResultEmail('user@example.com', {
+        name: 'Ahmed',
+        decision: 'accepted',
+        society: Society.CS,
+      });
+
+      const sentMail = mockTransporter.sendMail.mock.calls[0][0] as Record<
+        string,
+        any
+      >;
+
+      expect(sentMail.from).toBe('"CS IEEE CUSB Recruitment" <careers@cs.ieeecusb.org>');
     });
   });
 });

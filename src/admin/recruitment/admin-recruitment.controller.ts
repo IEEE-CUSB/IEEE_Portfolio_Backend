@@ -130,7 +130,11 @@ export class AdminRecruitmentController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateApplicationStatusDto,
   ) {
-    return this.adminRecruitmentService.updateApplicationStatus(id, dto.status);
+    return this.adminRecruitmentService.updateApplicationStatus(
+      id,
+      dto.status,
+      dto.message,
+    );
   }
 
   @Get('vacancies/:id/applications/export/excel')

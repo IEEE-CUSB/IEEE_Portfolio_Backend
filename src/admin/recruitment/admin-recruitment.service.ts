@@ -118,6 +118,7 @@ export class AdminRecruitmentService {
   async updateApplicationStatus(
     id: string,
     status: 'PENDING' | 'ACCEPTED' | 'REJECTED',
+    message?: string,
   ) {
     // Load with user so we have the email ready for the decision email — no second query later.
     const application = await this.applicationsRepository.findByIdWithUser(id);
@@ -141,7 +142,7 @@ export class AdminRecruitmentService {
     application.status = status;
     const saved = await this.applicationsRepository.save(application);
 
-    await this.sendDecisionEmail(application, status);
+    await this.sendDecisionEmail(application, status, message);
 
     return saved;
   }
@@ -149,6 +150,7 @@ export class AdminRecruitmentService {
   private async sendDecisionEmail(
     application: Application & { user?: { email?: string; name?: string } },
     status: 'ACCEPTED' | 'REJECTED',
+    message?: string,
   ) {
     // The decision is already saved, so a mail problem must never fail the request
     try {
@@ -168,6 +170,7 @@ export class AdminRecruitmentService {
           decision: status === 'ACCEPTED' ? 'accepted' : 'rejected',
           vacancyTitle: vacancy?.title,
           society: vacancy?.society,
+          message,
         },
       );
       this.logger.log(`Sent ${status} email for application ${application.id}`);
