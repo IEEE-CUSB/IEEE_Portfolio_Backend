@@ -21,7 +21,7 @@ export class VacanciesRepository {
       .leftJoinAndSelect('vacancy.category', 'category')
       .leftJoinAndSelect('vacancy.questions', 'question')
       .orderBy('vacancy.is_open', 'DESC')
-      .orderBy('vacancy.created_at', 'DESC')
+      .addOrderBy('vacancy.created_at', 'DESC')
       .addOrderBy('vacancy.id', 'DESC');
 
     this.applySearch(qb, query.search);
