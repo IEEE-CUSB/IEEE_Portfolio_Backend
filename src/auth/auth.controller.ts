@@ -193,6 +193,7 @@ export class AuthController {
   @ApiBody({ type: GenerateOtpDTO })
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.ACCOUNT_ALREADY_VERIFIED)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.TOO_MANY_OTP_REQUESTS)
   @ResponseMessage(SUCCESS_MESSAGES.OTP_GENERATED)
   @Post('otp/email/send')
   async sendEmailOtp(@Body() dto: GenerateOtpDTO) {
@@ -206,6 +207,7 @@ export class AuthController {
       'Intended for post-registration flow before a JWT is issued.',
   })
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ResponseMessage(SUCCESS_MESSAGES.EMAIL_VERIFIED)
   @Patch('otp/email/verify')
@@ -219,7 +221,7 @@ export class AuthController {
   @ApiOperation(send_password_reset_otp_swagger.operation)
   @ApiBody({ type: GenerateOtpDTO })
   @ApiOkResponse(send_password_reset_otp_swagger.responses.success)
-  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.TOO_MANY_OTP_REQUESTS)
   @ResponseMessage(SUCCESS_MESSAGES.PASSWORD_RESET_OTP_SENT)
   @Post('otp/password/send')
   async sendPasswordResetOtp(@Body() generate_otp_dto: GenerateOtpDTO) {
@@ -235,7 +237,7 @@ export class AuthController {
       'Verifies the OTP without consuming it, allowing frontend to proceed to password input.',
   })
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
-  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS)
   @Post('otp/password/check')
   async checkPasswordResetOtp(@Body() email_otp_dto: EmailOtpDTO) {
     return this.auth_service.checkPasswordResetOtp(
@@ -247,8 +249,8 @@ export class AuthController {
   @ApiOperation(reset_password_swagger.operation)
   @ApiBody({ type: ResetPasswordDTO })
   @ApiOkResponse(reset_password_swagger.responses.success)
-  @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
+  @ApiBadRequestErrorResponse(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.PASSWORD_CONFIRMATION_MISMATCH)
   @ApiBadRequestErrorResponse(ERROR_MESSAGES.NEW_PASSWORD_SAME_AS_OLD)
   @ResponseMessage(SUCCESS_MESSAGES.PASSWORD_RESET)
