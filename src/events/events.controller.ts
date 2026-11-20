@@ -39,7 +39,7 @@ import {
 import { ResponseMessage } from 'src/decorators/response-message.decorator';
 import { User } from 'src/users/entities/user.entity';
 import { OptionalJwtGuard } from 'src/auth/guards/optional-jwt.guard';
-
+import { CvUploadedGuard } from 'src/auth/guards/cv-uploaded.guard';
 @ApiTags('events')
 @Controller('events')
 export class EventsController {
@@ -105,7 +105,7 @@ export class EventsController {
     return this.eventsService.findOne(id, req.user);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'), CvUploadedGuard)
   @Post(':id/register')
   @ApiBearerAuth()
   @ApiOperation(register_event_swagger.operation)

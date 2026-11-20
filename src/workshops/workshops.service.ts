@@ -86,14 +86,14 @@ export class WorkshopsService {
       .leftJoinAndSelect('workshop.instructors', 'instructors')
       .leftJoinAndSelect('workshop.category', 'category');
 
-    const isAdmin = currentUser?.role?.name === RoleName.ADMIN || currentUser?.role?.name === RoleName.SUPER_ADMIN;
+    const isAdmin =
+      currentUser?.role?.name === RoleName.ADMIN ||
+      currentUser?.role?.name === RoleName.SUPER_ADMIN;
     if (!(isAdmin && include_unpublished)) {
       qb.where('workshop.is_published = :is_published', { is_published: true });
     }
 
-    qb.orderBy('workshop.start_time', 'ASC')
-      .skip(skip)
-      .take(limit);
+    qb.orderBy('workshop.start_time', 'ASC').skip(skip).take(limit);
 
     if (search) {
       qb.andWhere(
@@ -130,8 +130,12 @@ export class WorkshopsService {
   }
 
   async findOne(id: string, currentUser?: User) {
+    const isAdmin =
+      currentUser?.role?.name === RoleName.ADMIN ||
+      currentUser?.role?.name === RoleName.SUPER_ADMIN;
+
     const workshop = await this.workshopsRepository.findOne({
-      where: { id },
+      where: { id, ...(!isAdmin && { is_published: true }) },
       relations: ['images', 'instructors', 'category'],
     });
 

@@ -107,14 +107,14 @@ export class EventsService {
       .leftJoinAndSelect('event.category', 'category');
 
     // Only admins can see unpublished events
-    const isAdmin = currentUser?.role?.name === RoleName.ADMIN || currentUser?.role?.name === RoleName.SUPER_ADMIN;
+    const isAdmin =
+      currentUser?.role?.name === RoleName.ADMIN ||
+      currentUser?.role?.name === RoleName.SUPER_ADMIN;
     if (!(isAdmin && include_unpublished)) {
       query.where('event.is_published = :is_published', { is_published: true });
     }
 
-    query.orderBy('event.start_time', 'ASC')
-      .skip(skip)
-      .take(limit);
+    query.orderBy('event.start_time', 'ASC').skip(skip).take(limit);
 
     if (search) {
       query.andWhere(
@@ -150,8 +150,15 @@ export class EventsService {
   }
 
   async findOne(id: string, currentUser?: User) {
+    const isAdmin =
+      currentUser?.role?.name === RoleName.ADMIN ||
+      currentUser?.role?.name === RoleName.SUPER_ADMIN;
+
     const event = await this.eventsRepository.findOne({
-      where: { id },
+      where: {
+        id,
+        ...(!isAdmin && { is_published: true }),
+      },
       relations: ['images', 'category'],
     });
 
