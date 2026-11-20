@@ -80,4 +80,12 @@ export class RedisService {
 
     return deleted;
   }
+  // 
+  async incr(key: string): Promise<number> {
+    return this.client.incr(key);
+  }
+
+  async expire(key: string, seconds: number): Promise<number> {
+    return this.client.expire(key, seconds);
+  }
 }
