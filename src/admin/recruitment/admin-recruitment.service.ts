@@ -19,6 +19,7 @@ import * as ExcelJS from 'exceljs';
 import { MediaService } from '../../media/media.service';
 import { resolveMediaFolder } from '../../media/media.utils';
 import { MailService } from '../../mail/mail.service';
+import { RecruitmentService } from '../../recruitment/recruitment.service';
 import { VacancyQuestion } from 'src/recruitment/entities/vacancy-question.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -37,6 +38,7 @@ export class AdminRecruitmentService {
 
   constructor(
     private readonly mailService: MailService,
+    private readonly recruitmentService: RecruitmentService,
     private readonly vacanciesRepository: VacanciesRepository,
     private readonly applicationsRepository: ApplicationsRepository,
     private readonly storageService: StorageService,
@@ -44,6 +46,10 @@ export class AdminRecruitmentService {
     @InjectRepository(VacancyQuestion)
     private readonly questionRepo: Repository<VacancyQuestion>,
   ) {}
+
+  createApplicationShare(vacancyId: string) {
+    return this.recruitmentService.createApplicationShare(vacancyId);
+  }
 
   async createVacancy(dto: CreateVacancyDto) {
     const vacancy = this.vacanciesRepository.create(dto);

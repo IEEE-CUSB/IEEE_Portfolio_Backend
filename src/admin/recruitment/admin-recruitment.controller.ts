@@ -118,6 +118,12 @@ export class AdminRecruitmentController {
     return this.adminRecruitmentService.getApplications(vacancyId, query);
   }
 
+  @Post('vacancies/:id/applications/share')
+  @ResponseMessage('Read-only application share link created')
+  createApplicationShare(@Param('id', ParseUUIDPipe) vacancyId: string) {
+    return this.adminRecruitmentService.createApplicationShare(vacancyId);
+  }
+
   @Patch('applications/:id/status')
   @ApiOperation(admin_update_application_status_swagger.operation)
   @ApiOkResponse(admin_update_application_status_swagger.responses.success)

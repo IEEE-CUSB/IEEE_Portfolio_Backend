@@ -94,6 +94,24 @@ export class RecruitmentController {
     return this.recruitmentService.getVacancyById(id);
   }
 
+  @Get('shared-applications/:token')
+  @ApiBearerAuth()
+  getSharedApplications(@Param('token') token: string) {
+    return this.recruitmentService.getSharedApplications(token);
+  }
+
+  @Get('shared-applications/:token/:applicationId/cv')
+  @ApiBearerAuth()
+  async getSharedApplicationCv(
+    @Param('token') token: string,
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.recruitmentService.getSharedApplicationCv(token, applicationId);
+    res.set({ 'Content-Type': file.contentType, 'Content-Disposition': 'inline; filename="applicant-cv.pdf"' });
+    res.send(file.fileBuffer);
+  }
+
   @Post('vacancies/:id/apply')
   @ApiOperation(apply_to_vacancy_swagger.operation)
   @ApiCreatedResponse(apply_to_vacancy_swagger.responses.success)

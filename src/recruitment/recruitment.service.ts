@@ -10,6 +10,8 @@ import { ApplicationsRepository } from './applications.repository';
 import { UsersRepository } from '../users/users.repository';
 import { MediaService } from '../media/media.service';
 import { StorageService } from '../storage/storage.service';
+import { JwtService } from '@nestjs/jwt';
+import { ForbiddenException } from '@nestjs/common';
 
 @Injectable()
 export class RecruitmentService {
@@ -19,7 +21,77 @@ export class RecruitmentService {
     private readonly usersRepository: UsersRepository,
     private readonly mediaService: MediaService,
     private readonly storageService: StorageService,
+    private readonly jwtService: JwtService,
   ) {}
+
+  async createApplicationShare(vacancyId: string) {
+    const vacancy = await this.vacanciesRepository.findById(vacancyId);
+    if (!vacancy) throw new NotFoundException('Vacancy not found');
+    const token = await this.jwtService.signAsync(
+      { purpose: 'vacancy_applications_share', vacancyId },
+      { expiresIn: '7d' },
+    );
+    return { token, expiresInDays: 7 };
+  }
+
+  async getSharedApplications(token: string) {
+    const payload = await this.verifyApplicationShare(token);
+    const vacancy = await this.vacanciesRepository.findById(payload.vacancyId);
+    if (!vacancy) throw new NotFoundException('Vacancy not found');
+    const applications = await this.applicationsRepository.findByVacancy(
+      payload.vacancyId,
+      {},
+    );
+    return {
+      vacancy: { id: vacancy.id, title: vacancy.title },
+      expiresAt: new Date(payload.exp * 1000).toISOString(),
+      applications: applications.map((application) => ({
+        id: application.id,
+        status: application.status,
+        created_at: application.created_at,
+        extra_data: application.extra_data,
+        user: application.user
+          ? {
+              id: application.user.id,
+              name: application.user.name,
+              username: application.user.username,
+              email: application.user.email,
+              phone: application.user.phone,
+              faculty: application.user.faculty,
+              university: application.user.university,
+              academic_year: application.user.academic_year,
+              major: application.user.major,
+              bio: application.user.bio,
+              has_cv: Boolean(application.user.cv_file_key),
+            }
+          : null,
+      })),
+    };
+  }
+
+  async getSharedApplicationCv(token: string, applicationId: string) {
+    const payload = await this.verifyApplicationShare(token);
+    const application = await this.applicationsRepository.findByIdWithUser(applicationId);
+    if (!application || application.vacancy_id !== payload.vacancyId) {
+      throw new NotFoundException('Application not found');
+    }
+    if (!application.user?.cv_file_key) {
+      throw new NotFoundException('CV not found');
+    }
+    return this.storageService.getFile(application.user.cv_file_key);
+  }
+
+  private async verifyApplicationShare(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+      if (payload.purpose !== 'vacancy_applications_share' || !payload.vacancyId) {
+        throw new Error('Invalid share token');
+      }
+      return payload as { purpose: string; vacancyId: string; exp: number };
+    } catch {
+      throw new ForbiddenException('This application share link is invalid or expired');
+    }
+  }
 
   async getOpenVacancies(
     search?: string,
