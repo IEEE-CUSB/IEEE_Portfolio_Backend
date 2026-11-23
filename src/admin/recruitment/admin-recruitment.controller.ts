@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express';
+import { SuperAdminGuard } from 'src/auth/guards/super-admin.guard';
 import {
   Req,
   Controller,
@@ -14,6 +15,7 @@ import {
   ClassSerializerInterceptor,
   Delete,
   UploadedFile,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -236,6 +238,7 @@ export class AdminRecruitmentController {
   }
 
   @Get('file/download')
+  @UseGuards(SuperAdminGuard)
   @ApiOperation({ summary: 'Download/View an application file' })
   @ApiOkResponse({ description: 'File downloaded successfully' })
   @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)

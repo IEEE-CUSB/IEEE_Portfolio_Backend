@@ -4,7 +4,9 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
+import * as path from 'path';
 import { Application } from '../../recruitment/entities/application.entity';
 import { VacanciesRepository } from '../../recruitment/vacancies.repository';
 import { ApplicationsRepository } from '../../recruitment/applications.repository';
@@ -311,8 +313,15 @@ export class AdminRecruitmentService {
   }
 
   async downloadApplicationFile(fileKey: string, res: any) {
+    const normalizedKey = path.posix.normalize(fileKey);
+
+    if (!normalizedKey.startsWith('applications/') ||
+        normalizedKey.includes('..')
+    ) {
+      throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN_ACTION);
+    }
     try {
-      const file = await this.storageService.getFile(fileKey);
+      const file = await this.storageService.getFile(normalizedKey);
       res.set({
         'Content-Type': file.contentType,
         'Content-Length': file.size,
