@@ -6,6 +6,7 @@ import {
   IsArray,
   IsEnum,
   IsNumber,
+  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
@@ -38,12 +39,18 @@ export class VacancyQuestionDto {
   @ApiPropertyOptional({ example: ['Option 1', 'Option 2'] })
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
   options?: string[];
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   is_required?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  allow_multiple_selection?: boolean;
 
   @ApiProperty({ example: 1 })
   @IsNumber()
