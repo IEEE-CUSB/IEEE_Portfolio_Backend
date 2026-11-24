@@ -55,12 +55,6 @@ export class VacancyQuestionDto {
   @ApiProperty({ example: 1 })
   @IsNumber()
   order!: number;
-
-  // entity had it but not here
-  @ApiPropertyOptional({ example: false })
-  @IsOptional()
-  @IsBoolean()
-  allow_multiple_selection?: boolean;
 }
 
 export class CreateVacancyDto {
