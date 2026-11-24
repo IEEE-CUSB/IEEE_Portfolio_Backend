@@ -1,4 +1,4 @@
-import { IsOptional, IsBoolean, IsUUID, ValidateNested, IsArray, IsEnum, IsNumber } from 'class-validator';
+import { IsOptional, IsBoolean, IsUUID, ValidateNested, IsArray, IsEnum, IsNumber,IsString } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { STRING_MAX_LENGTH } from 'src/constants/variables';
@@ -9,6 +9,11 @@ import {
 import { QuestionType } from '../../../recruitment/entities/vacancy-question.entity';
 
 export class VacancyQuestionDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
   @ApiProperty({ example: 'What is your experience with NestJS?' })
   @IsHumanText({
     minLength: 1,
@@ -24,12 +29,18 @@ export class VacancyQuestionDto {
   @ApiPropertyOptional({ example: ['Option 1', 'Option 2'] })
   @IsOptional()
   @IsArray()
+  @IsString({ each: true })
   options?: string[];
 
   @ApiPropertyOptional({ example: true })
   @IsOptional()
   @IsBoolean()
   is_required?: boolean;
+
+  @ApiPropertyOptional({ example: false })
+  @IsOptional()
+  @IsBoolean()
+  allow_multiple_selection?: boolean;
 
   @ApiProperty({ example: 1 })
   @IsNumber()
