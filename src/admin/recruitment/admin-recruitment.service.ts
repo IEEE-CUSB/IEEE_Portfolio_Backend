@@ -34,6 +34,29 @@ const VACANCIES_MEDIA_FOLDER = resolveMediaFolder(
 /** `cv_url` is derived per-request, not a mapped column on the entity. */
 type ApplicationWithCvUrl = Application & { cv_url?: string };
 
+/** Prevent CSV/Excel formula injection from user-supplied text. */
+function safeCell(value: unknown): string | number {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return value;
+  const text = String(value);
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
+/** Turns any stored answer shape into readable text. */
+function formatAnswer(value: unknown): string {
+  if (value === null || value === undefined || value === '') return '';
+  if (Array.isArray(value))
+    return value.map(formatAnswer).filter(Boolean).join(', ');
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    // FILE answers: { url, public_id }
+    if (typeof obj.url === 'string') return obj.url;
+    return JSON.stringify(obj);
+  }
+  return String(value);
+}
+
 @Injectable()
 export class AdminRecruitmentService {
   private readonly logger = new Logger(AdminRecruitmentService.name); // added
@@ -194,60 +217,147 @@ export class AdminRecruitmentService {
     vacancyId: string,
     startDate?: string,
     endDate?: string,
+    search?: string,
   ) {
+    // Loads questions via relations ['category', 'questions']; 404s if missing
     const vacancy = await this.getVacancyOrFail(vacancyId);
 
-    const applications = await this.applicationsRepository.findByVacancy(
-      vacancyId,
-      { startDate, endDate },
+    const all = await this.applicationsRepository.findByVacancy(vacancyId, {
+      startDate,
+      endDate,
+      search,
+    });
+
+    // One row per applicant (list is newest-first, so we keep the latest)
+    const seenUsers = new Set<string>();
+    const applications = all.filter((app) => {
+      if (seenUsers.has(app.user_id)) return false;
+      seenUsers.add(app.user_id);
+      return true;
+    });
+
+    const questions: VacancyQuestion[] = [...(vacancy.questions ?? [])].sort(
+      (a, b) => a.order - b.order,
+    );
+
+    // Unique, meaningful headers for question columns
+    const usedHeaders = new Set<string>();
+    const questionColumns = questions.map((q, i) => {
+      let header = q.question_text.trim() || `Question ${i + 1}`;
+      if (usedHeaders.has(header)) header = `${header} (#${i + 1})`;
+      usedHeaders.add(header);
+      return { question: q, header, key: `q_${q.id}` };
+    });
+
+    // Answers whose key matches no current question (e.g. since-edited questions)
+    const questionKeys = new Set(
+      questions.flatMap((q) => [q.id, q.question_text]),
+    );
+    const hasOrphans = applications.some((a) =>
+      Object.keys(a.extra_data ?? {}).some((k) => !questionKeys.has(k)),
     );
 
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Applications');
+    workbook.created = new Date();
+    const sheet = workbook.addWorksheet('Applications');
 
-    worksheet.columns = [
-      { header: 'ID', key: 'id', width: 36 },
-      { header: 'Status', key: 'status', width: 15 },
-      { header: 'User Name', key: 'name', width: 30 },
-      { header: 'User Email', key: 'email', width: 30 },
-      { header: 'Phone', key: 'phone', width: 20 },
-      { header: 'University', key: 'university', width: 25 },
-      { header: 'Faculty', key: 'faculty', width: 25 },
-      { header: 'Major', key: 'major', width: 25 },
-      { header: 'Academic Year', key: 'academic_year', width: 15 },
-      { header: 'CV Link (Key)', key: 'cv_file_key', width: 30 },
-      { header: 'Extra Data', key: 'extra_data', width: 50 },
-      { header: 'Applied At', key: 'created_at', width: 25 },
+    sheet.columns = [
+      { header: 'Application ID', key: 'id', width: 38 },
+      { header: 'Status', key: 'status', width: 12 },
+      { header: 'Applied At', key: 'created_at', width: 20 },
+      { header: 'Last Updated', key: 'updated_at', width: 20 },
+      { header: 'Name', key: 'name', width: 28 },
+      { header: 'Username', key: 'username', width: 22 },
+      { header: 'Email', key: 'email', width: 32 },
+      { header: 'Phone', key: 'phone', width: 18 },
+      { header: 'University', key: 'university', width: 26 },
+      { header: 'Faculty', key: 'faculty', width: 26 },
+      { header: 'Major', key: 'major', width: 24 },
+      { header: 'Academic Year', key: 'academic_year', width: 14 },
+      { header: 'Bio', key: 'bio', width: 40 },
+      { header: 'CV Link', key: 'cv', width: 16 },
+      ...questionColumns.map((c) => ({
+        header: c.header,
+        key: c.key,
+        width: 36,
+      })),
+      ...(hasOrphans
+        ? [{ header: 'Other Answers', key: 'orphans', width: 40 }]
+        : []),
     ];
 
     for (const app of applications) {
-      let cvLink: string | ExcelJS.CellHyperlinkValue = 'N/A';
-      if (app.user?.cv_file_key) {
-        const url = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/${app.id}/cv`;
-        cvLink = { text: 'View CV', hyperlink: url };
-      }
+      const extra: Record<string, unknown> = app.extra_data ?? {};
+      const u = app.user;
 
-      worksheet.addRow({
+      const row: Record<string, unknown> = {
         id: app.id,
         status: app.status,
-        name: app.user?.name || 'N/A',
-        email: app.user?.email || 'N/A',
-        phone: app.user?.phone || 'N/A',
-        university: app.user?.university || 'N/A',
-        faculty: app.user?.faculty || 'N/A',
-        major: app.user?.major || 'N/A',
-        academic_year: app.user?.academic_year || 'N/A',
-        cv_file_key: cvLink,
-        extra_data: app.extra_data ? JSON.stringify(app.extra_data) : '',
-        created_at: app.created_at.toISOString(),
-      });
+        created_at: app.created_at.toISOString().replace('T', ' ').slice(0, 19),
+        updated_at: app.updated_at.toISOString().replace('T', ' ').slice(0, 19),
+        name: safeCell(u?.name),
+        username: safeCell(u?.username),
+        email: safeCell(u?.email),
+        phone: safeCell(u?.phone),
+        university: safeCell(u?.university),
+        faculty: safeCell(u?.faculty),
+        major: safeCell(u?.major),
+        academic_year: u?.academic_year ?? '',
+        bio: safeCell(u?.bio),
+        cv: u?.cv_file_key
+          ? {
+              text: 'View CV',
+              hyperlink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/${app.id}/cv`,
+            }
+          : '',
+      };
+
+      for (const c of questionColumns) {
+        const raw = extra[c.question.id] ?? extra[c.question.question_text];
+        row[c.key] = safeCell(formatAnswer(raw));
+      }
+
+      if (hasOrphans) {
+        row.orphans = safeCell(
+          Object.entries(extra)
+            .filter(([k]) => !questionKeys.has(k))
+            .map(([k, v]) => `${k}: ${formatAnswer(v)}`)
+            .join(' | '),
+        );
+      }
+
+      sheet.addRow(row);
     }
 
+    // Formatting
+    const header = sheet.getRow(1);
+    header.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    header.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF00529B' },
+    };
+    header.alignment = { vertical: 'middle', wrapText: true };
+    header.height = 24;
+    sheet.views = [{ state: 'frozen', ySplit: 1 }];
+    if (sheet.columnCount > 0) {
+      sheet.autoFilter = {
+        from: { row: 1, column: 1 },
+        to: { row: 1, column: sheet.columnCount },
+      };
+    }
+    sheet.eachRow((r, i) => {
+      if (i > 1) r.alignment = { vertical: 'top', wrapText: true };
+    });
+
     const buffer = await workbook.xlsx.writeBuffer();
+    const safeTitle =
+      vacancy.title.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '') ||
+      'vacancy';
 
     return {
       fileBuffer: Buffer.from(buffer as ArrayBuffer),
-      fileName: `applications-${vacancy.title.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.xlsx`,
+      fileName: `applications-${safeTitle}-${new Date().toISOString().split('T')[0]}.xlsx`,
     };
   }
 
@@ -321,8 +431,9 @@ export class AdminRecruitmentService {
   async downloadApplicationFile(fileKey: string, res: any) {
     const normalizedKey = path.posix.normalize(fileKey);
 
-    if (!normalizedKey.startsWith('applications/') ||
-        normalizedKey.includes('..')
+    if (
+      !normalizedKey.startsWith('applications/') ||
+      normalizedKey.includes('..')
     ) {
       throw new ForbiddenException(ERROR_MESSAGES.FORBIDDEN_ACTION);
     }

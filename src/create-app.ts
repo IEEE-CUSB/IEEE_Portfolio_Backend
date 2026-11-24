@@ -8,69 +8,71 @@ import { ResponseInterceptor } from './interceptor/response.interceptor';
 import { join } from 'path';
 
 export async function createApp(): Promise<NestExpressApplication> {
-    const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-    // Serve everything in /public as static files (e.g. GET /logo.png)
-    app.useStaticAssets(join(__dirname, '..', 'public'));
-    app.useGlobalPipes(
-        new ValidationPipe({
-            whitelist: true,
-            transform: true,
-            transformOptions: {
-                exposeDefaultValues: true,
-            },
-        })
-    );
-    app.use(cookieParser());
-    app.enableCors({
-        origin: [
-            'http://localhost:5173',
-            'http://localhost:3001',
-            process.env.FRONTEND_URL || 'http://localhost:8000',
-        ],
-        credentials: true,
+  // Serve everything in /public as static files (e.g. GET /logo.png)
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      transformOptions: {
+        exposeDefaultValues: true,
+      },
+    }),
+  );
+  app.use(cookieParser());
+  app.enableCors({
+    origin: [
+      'http://localhost:5173',
+      'http://localhost:3001',
+      process.env.FRONTEND_URL || 'http://localhost:8000',
+    ],
+    credentials: true,
+    exposedHeaders: ['Content-Disposition'],
+  });
+
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
+
+  // response interceptor
+  app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
+
+  // for swagger
+  const config = new DocumentBuilder()
+    .setTitle('IEEE Backend API')
+    .setDescription(
+      'IEEE Documentation presented by backend team with lots of kisses for you 😘',
+    )
+    .setVersion('1.0')
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'JWT',
+      description: 'Enter JWT token',
+      in: 'header',
     });
 
-    app.use(require('express').json({ limit: '50mb' }));
-    app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
+  const swagger_server_url = process.env.BACKEND_URL;
+  if (swagger_server_url) {
+    config.addServer(swagger_server_url);
+  }
+  const config_document = config.build();
 
-    // response interceptor
-    app.useGlobalInterceptors(new ResponseInterceptor(app.get(Reflector)));
+  const document = SwaggerModule.createDocument(app, config_document);
+  SwaggerModule.setup('api-docs', app, document, {
+    customSiteTitle: 'IEEE Backend API Docs',
+    customfavIcon:
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/favicon-32x32.png',
+    customJs: [
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js',
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
+    ],
+    customCssUrl: [
+      'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css',
+    ],
+  });
 
-    // for swagger
-    const config = new DocumentBuilder()
-        .setTitle('IEEE Backend API')
-        .setDescription(
-            'IEEE Documentation presented by backend team with lots of kisses for you 😘'
-        )
-        .setVersion('1.0')
-        .addBearerAuth({
-            type: 'http',
-            scheme: 'bearer',
-            bearerFormat: 'JWT',
-            name: 'JWT',
-            description: 'Enter JWT token',
-            in: 'header',
-        });
-
-    const swagger_server_url = process.env.BACKEND_URL;
-    if (swagger_server_url) {
-        config.addServer(swagger_server_url);
-    }
-    const config_document = config.build();
-
-    const document = SwaggerModule.createDocument(app, config_document);
-    SwaggerModule.setup('api-docs', app, document, {
-        customSiteTitle: 'IEEE Backend API Docs',
-        customfavIcon: 'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/favicon-32x32.png',
-        customJs: [
-            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js',
-            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js',
-        ],
-        customCssUrl: [
-            'https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css',
-        ],
-    });
-
-    return app;
+  return app;
 }

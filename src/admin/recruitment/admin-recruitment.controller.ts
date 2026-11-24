@@ -154,24 +154,27 @@ export class AdminRecruitmentController {
   @ApiInternalServerError(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
   @ApiQuery({ name: 'startDate', required: false, type: String })
   @ApiQuery({ name: 'endDate', required: false, type: String })
+  @ApiQuery({ name: 'search', required: false, type: String })
   async exportApplicationsToExcel(
     @Param('id', ParseUUIDPipe) vacancyId: string,
     @Res() res: Response,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('search') search?: string,
   ) {
     const file = await this.adminRecruitmentService.exportApplicationsToExcel(
       vacancyId,
       startDate,
       endDate,
+      search,
     );
 
     res.set({
       'Content-Type':
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': `attachment; filename="${file.fileName}"`,
+      'Content-Disposition': `attachment; filename="${file.fileName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+      'Cache-Control': 'no-store', // always the latest data
     });
-
     res.send(file.fileBuffer);
   }
 
