@@ -25,6 +25,7 @@ import {
   ALLOWED_CV_TYPES,
   ALLOWED_MAX_CV_SIZE,
 } from 'src/storage/storage.constants';
+import { normalizeEmail } from 'src/common/utils/normalize-email.util';
 
 enum AuthOtpPurpose {
   EmailVerification = 'emailVerification',
@@ -208,7 +209,9 @@ export class AuthService {
       );
     }
 
-    const emailExists = await this.user_repository.findByEmail(email);
+    const normalizedEmail = normalizeEmail(email);
+
+    const emailExists = await this.user_repository.findByEmail(normalizedEmail);
     if (emailExists) {
       throw new BadRequestException(ERROR_MESSAGES.EMAIL_ALREADY_EXISTS);
     }
@@ -224,7 +227,7 @@ export class AuthService {
     const visitorRole = await this.roles_service.findByName(RoleName.VISITOR);
 
     let newUser = await this.user_repository.create({
-      email,
+      email: normalizedEmail,
       username,
       name,
       phone,

@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { ERROR_MESSAGES } from 'src/constants/swagger-messages';
+import { normalizeEmail } from 'src/common/utils/normalize-email.util';
 
 @Injectable()
 export class UsersRepository {
@@ -47,7 +48,7 @@ export class UsersRepository {
   ): Promise<User | null> {
     try {
       return await this.userRepository.findOne({
-        where: { email: email.trim().toLowerCase() },
+        where: { email: normalizeEmail(email) },
         relations,
       });
     } catch (error) {
@@ -112,7 +113,7 @@ export class UsersRepository {
   }
 
   async create(userData: Partial<User>): Promise<User> {
-    if (userData.email) userData.email = userData.email.trim().toLowerCase();
+    if (userData.email) userData.email = normalizeEmail(userData.email);
 
     try {
       const user = this.userRepository.create(userData);
@@ -130,8 +131,7 @@ export class UsersRepository {
    * @returns Updated user entity
    */
   async update(id: string, updateData: Partial<User>): Promise<User> {
-    if (updateData.email)
-      updateData.email = updateData.email.trim().toLowerCase();
+    if (updateData.email) updateData.email = normalizeEmail(updateData.email);
 
     try {
       await this.userRepository.update(id, updateData);
