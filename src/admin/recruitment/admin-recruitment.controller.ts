@@ -146,6 +146,9 @@ export class AdminRecruitmentController {
   }
 
   @Get('vacancies/:id/applications/export/excel')
+  @ApiProduces(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
   @ApiOperation(admin_export_applications_swagger.operation)
   @ApiOkResponse(admin_export_applications_swagger.responses.success)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.VACANCY_NOT_FOUND)

@@ -149,31 +149,26 @@ export const admin_export_applications_swagger = {
   operation: {
     summary: 'Export applications as Excel',
     description:
-      'Admins can export applications for a specific vacancy to an Excel sheet.',
+      'Exports all applications for a vacancy to an .xlsx file: one row per applicant, with personal info, contact info, status, CV link, and one column per application question. Optional startDate/endDate/search filters match the applications list. Each applicant appears once (latest application). Admin only.',
   },
   responses: {
     success: {
       description: 'Excel file exported successfully.',
-      schema: {
-        type: 'string',
-        format: 'binary',
-      },
+      schema: { type: 'string', format: 'binary' },
       headers: {
         'Content-Type': {
           description:
-            'The MIME type of the file (application/vnd.openxmlformats-officedocument.spreadsheetml.sheet)',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
           schema: { type: 'string' },
         },
         'Content-Disposition': {
-          description:
-            'Standard header indicating an attachment with a file name',
+          description: 'Attachment with the generated .xlsx filename',
           schema: { type: 'string' },
         },
       },
     },
   },
 };
-
 export const admin_delete_vacancy_swagger = {
   operation: {
     summary: 'Delete a vacancy',
