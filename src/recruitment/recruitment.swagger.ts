@@ -21,6 +21,32 @@ const application_example = {
   updated_at: '2025-12-03T10:30:00Z',
 };
 
+export const export_shared_applications_swagger = {
+  operation: {
+    summary: 'Export shared vacancy applications as Excel',
+    description:
+      'Public, read-only. Uses the share token created by an admin (valid 7 days) instead of an account. Exports every applicant for the one vacancy the token was issued for: one row per applicant, with personal info, contact info, status, CV link, and one column per application question. No filters.',
+  },
+  responses: {
+    success: {
+      status: HttpStatus.OK,
+      description: 'Excel file exported successfully.',
+      schema: { type: 'string', format: 'binary' },
+      headers: {
+        'Content-Type': {
+          description:
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          schema: { type: 'string' },
+        },
+        'Content-Disposition': {
+          description: 'Attachment with the generated .xlsx filename',
+          schema: { type: 'string' },
+        },
+      },
+    },
+  },
+};
+
 export const get_open_vacancies_swagger = {
   operation: {
     summary: 'Get all open vacancies',

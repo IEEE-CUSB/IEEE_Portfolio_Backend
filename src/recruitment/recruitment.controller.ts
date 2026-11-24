@@ -23,6 +23,7 @@ import {
   ApiQuery,
   ApiConsumes,
   ApiBody,
+  ApiProduces,
 } from '@nestjs/swagger';
 import {
   ApiForbiddenErrorResponse,
@@ -42,6 +43,7 @@ import {
   apply_to_vacancy_swagger,
   get_my_applications_swagger,
   revoke_application_swagger,
+  export_shared_applications_swagger,
 } from './recruitment.swagger';
 import { ResponseMessage } from '../decorators/response-message.decorator';
 import type { Request, Response } from 'express';
@@ -107,8 +109,14 @@ export class RecruitmentController {
     @Param('applicationId', ParseUUIDPipe) applicationId: string,
     @Res() res: Response,
   ) {
-    const file = await this.recruitmentService.getSharedApplicationCv(token, applicationId);
-    res.set({ 'Content-Type': file.contentType, 'Content-Disposition': 'inline; filename="applicant-cv.pdf"' });
+    const file = await this.recruitmentService.getSharedApplicationCv(
+      token,
+      applicationId,
+    );
+    res.set({
+      'Content-Type': file.contentType,
+      'Content-Disposition': 'inline; filename="applicant-cv.pdf"',
+    });
     res.send(file.fileBuffer);
   }
 
@@ -176,5 +184,30 @@ export class RecruitmentController {
   @ResponseMessage('File uploaded successfully')
   async uploadApplicationFile(@UploadedFile() file: any) {
     return this.recruitmentService.uploadApplicationFile(file);
+  }
+
+  @Get('shared-applications/:token/export/excel')
+  @ApiOperation(export_shared_applications_swagger.operation)
+  @ApiProduces(
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  )
+  @ApiOkResponse(export_shared_applications_swagger.responses.success)
+  @ApiForbiddenErrorResponse(
+    'This application share link is invalid or expired',
+  )
+  @ApiNotFoundErrorResponse(ERROR_MESSAGES.VACANCY_NOT_FOUND)
+  @ApiInternalServerError(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
+  async exportSharedApplications(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
+    const file = await this.recruitmentService.exportSharedApplications(token);
+    res.set({
+      'Content-Type':
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="${file.fileName}"; filename*=UTF-8''${encodeURIComponent(file.fileName)}`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(file.fileBuffer);
   }
 }

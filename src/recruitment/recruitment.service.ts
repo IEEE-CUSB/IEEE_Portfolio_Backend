@@ -12,6 +12,7 @@ import { MediaService } from '../media/media.service';
 import { StorageService } from '../storage/storage.service';
 import { JwtService } from '@nestjs/jwt';
 import { ForbiddenException } from '@nestjs/common';
+import { buildApplicationsWorkbook } from './applications-export.builder';
 
 @Injectable()
 export class RecruitmentService {
@@ -23,6 +24,23 @@ export class RecruitmentService {
     private readonly storageService: StorageService,
     private readonly jwtService: JwtService,
   ) {}
+
+  async exportSharedApplications(token: string) {
+    const payload = await this.verifyApplicationShare(token);
+    const vacancy = await this.vacanciesRepository.findById(payload.vacancyId);
+    if (!vacancy) throw new NotFoundException('Vacancy not found');
+
+    const applications = await this.applicationsRepository.findByVacancy(
+      payload.vacancyId,
+      {},
+    );
+    return buildApplicationsWorkbook(
+      vacancy,
+      applications,
+      (app) =>
+        `${process.env.BACKEND_URL ?? ''}/recruitment/shared-applications/${token}/${app.id}/cv`,
+    );
+  }
 
   async createApplicationShare(vacancyId: string) {
     const vacancy = await this.vacanciesRepository.findById(vacancyId);
@@ -71,7 +89,8 @@ export class RecruitmentService {
 
   async getSharedApplicationCv(token: string, applicationId: string) {
     const payload = await this.verifyApplicationShare(token);
-    const application = await this.applicationsRepository.findByIdWithUser(applicationId);
+    const application =
+      await this.applicationsRepository.findByIdWithUser(applicationId);
     if (!application || application.vacancy_id !== payload.vacancyId) {
       throw new NotFoundException('Application not found');
     }
@@ -84,12 +103,17 @@ export class RecruitmentService {
   private async verifyApplicationShare(token: string) {
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      if (payload.purpose !== 'vacancy_applications_share' || !payload.vacancyId) {
+      if (
+        payload.purpose !== 'vacancy_applications_share' ||
+        !payload.vacancyId
+      ) {
         throw new Error('Invalid share token');
       }
       return payload as { purpose: string; vacancyId: string; exp: number };
     } catch {
-      throw new ForbiddenException('This application share link is invalid or expired');
+      throw new ForbiddenException(
+        'This application share link is invalid or expired',
+      );
     }
   }
 

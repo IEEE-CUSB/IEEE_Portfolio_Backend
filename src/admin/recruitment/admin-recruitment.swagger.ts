@@ -149,7 +149,7 @@ export const admin_export_applications_swagger = {
   operation: {
     summary: 'Export applications as Excel',
     description:
-      'Exports all applications for a vacancy to an .xlsx file: one row per applicant, with personal info, contact info, status, CV link, and one column per application question. Optional startDate/endDate/search filters match the applications list. Each applicant appears once (latest application). Admin only.',
+      'Exports applications for a vacancy to an .xlsx file: one row per applicant (latest application), with personal info, contact info, status, CV link, and one column per application question. Optional startDate/endDate/search filters match the applications list. Admin only.',
   },
   responses: {
     success: {
@@ -169,6 +169,7 @@ export const admin_export_applications_swagger = {
     },
   },
 };
+
 export const admin_delete_vacancy_swagger = {
   operation: {
     summary: 'Delete a vacancy',
