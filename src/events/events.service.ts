@@ -4,43 +4,27 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, SelectQueryBuilder } from 'typeorm';
 import { Event } from './entities/event.entity';
-import { EventImage } from './entities/event-image.entity';
-import {
-  EventRegistration,
-  EventRegistrationStatus,
-} from './entities/event-registration.entity';
+import { EventRegistrationStatus } from './entities/event-registration.entity';
+import { EventsRepository } from './events.repository';
+import { EventRegistrationsRepository } from './event-registrations.repository';
 import { User } from 'src/users/entities/user.entity';
 import { RoleName } from 'src/roles/entities/role.entity';
 import { ERROR_MESSAGES } from 'src/constants/swagger-messages';
-import { MediaService } from 'src/media/media.service';
-import { resolveMediaFolder } from 'src/media/media.utils';
 
+/** Business rules for events: visibility, registration, capacity and waitlist. */
 @Injectable()
 export class EventsService {
   constructor(
-    @InjectRepository(Event)
-    private readonly eventsRepository: Repository<Event>,
-    @InjectRepository(EventImage)
-    private readonly eventImagesRepository: Repository<EventImage>,
-    @InjectRepository(EventRegistration)
-    private readonly registrationsRepository: Repository<EventRegistration>,
-    private readonly mediaService: MediaService,
+    private readonly eventsRepository: EventsRepository,
+    private readonly registrationsRepository: EventRegistrationsRepository,
   ) {}
 
   // is_full / remainingSpots / is_registered / registration_id
   private async enrichEventWithDetails(event: Event, currentUser?: User) {
-    const registeredCount = await this.registrationsRepository.count({
-      where: {
-        event_id: event.id,
-        status: In([
-          EventRegistrationStatus.REGISTERED,
-          EventRegistrationStatus.ATTENDED,
-        ]),
-      },
-    });
+    const registeredCount = await this.registrationsRepository.countSpotHolding(
+      event.id,
+    );
 
     const remainingSpots = event.capacity - registeredCount;
     const is_full = remainingSpots <= 0;
@@ -53,17 +37,11 @@ export class EventsService {
 
     // Add user-specific registration info if authenticated
     if (currentUser) {
-      const userRegistration = await this.registrationsRepository.findOne({
-        where: {
-          event_id: event.id,
-          user_id: currentUser.id,
-          status: In([
-            EventRegistrationStatus.REGISTERED,
-            EventRegistrationStatus.ATTENDED,
-            EventRegistrationStatus.WAITLISTED,
-          ]),
-        },
-      });
+      const userRegistration =
+        await this.registrationsRepository.findActiveForUser(
+          event.id,
+          currentUser.id,
+        );
 
       enrichedEvent.is_registered = !!userRegistration;
       enrichedEvent.registration = userRegistration || null;
@@ -73,14 +51,8 @@ export class EventsService {
   }
 
   private async popOneWaitlistedToRegistered(eventId: string) {
-    const [waitlisted] = await this.registrationsRepository.find({
-      where: {
-        event_id: eventId,
-        status: EventRegistrationStatus.WAITLISTED,
-      },
-      order: { created_at: 'ASC' },
-      take: 1,
-    });
+    const waitlisted =
+      await this.registrationsRepository.findOldestWaitlisted(eventId);
 
     if (waitlisted) {
       waitlisted.status = EventRegistrationStatus.REGISTERED;
@@ -99,41 +71,21 @@ export class EventsService {
     category_id?: string,
     include_unpublished?: boolean,
   ) {
-    const skip = (page - 1) * limit;
-
-    const query = this.eventsRepository
-      .createQueryBuilder('event')
-      .leftJoinAndSelect('event.images', 'images')
-      .leftJoinAndSelect('event.category', 'category');
-
     // Only admins can see unpublished events
-    const isAdmin = currentUser?.role?.name === RoleName.ADMIN || currentUser?.role?.name === RoleName.SUPER_ADMIN;
-    if (!(isAdmin && include_unpublished)) {
-      query.where('event.is_published = :is_published', { is_published: true });
-    }
+    const isAdmin =
+      currentUser?.role?.name === RoleName.ADMIN ||
+      currentUser?.role?.name === RoleName.SUPER_ADMIN;
 
-    query.orderBy('event.start_time', 'ASC')
-      .skip(skip)
-      .take(limit);
-
-    if (search) {
-      query.andWhere(
-        '(event.title ILIKE :search OR event.description ILIKE :search)',
-        { search: `%${search}%` },
-      );
-    }
-
-    if (location) {
-      query.andWhere('event.location ILIKE :location', {
-        location: `%${location}%`,
-      });
-    }
-
-    if (category_id) {
-      query.andWhere('event.category_id = :category_id', { category_id });
-    }
-
-    const [events, total] = await query.getManyAndCount();
+    const [events, total] = await this.eventsRepository.findAllPaginated(
+      page,
+      limit,
+      {
+        search,
+        location,
+        category_id,
+        publishedOnly: !(isAdmin && include_unpublished),
+      },
+    );
 
     // Enrich events with capacity and registration details
     const enrichedEvents = await Promise.all(
@@ -150,10 +102,7 @@ export class EventsService {
   }
 
   async findOne(id: string, currentUser?: User) {
-    const event = await this.eventsRepository.findOne({
-      where: { id },
-      relations: ['images', 'category'],
-    });
+    const event = await this.eventsRepository.findByIdWithRelations(id);
 
     if (!event) {
       throw new NotFoundException(ERROR_MESSAGES.EVENT_NOT_FOUND);
@@ -167,9 +116,7 @@ export class EventsService {
   }
 
   async register(eventId: string, currentUser: User) {
-    const event = await this.eventsRepository.findOne({
-      where: { id: eventId },
-    });
+    const event = await this.eventsRepository.findById(eventId);
 
     if (!event) {
       throw new NotFoundException(ERROR_MESSAGES.EVENT_NOT_FOUND);
@@ -179,9 +126,11 @@ export class EventsService {
       throw new BadRequestException(ERROR_MESSAGES.EVENT_REGISTRATION_CLOSED);
     }
 
-    const existingRegistration = await this.registrationsRepository.findOne({
-      where: { event_id: eventId, user_id: currentUser.id },
-    });
+    const existingRegistration =
+      await this.registrationsRepository.findByEventAndUser(
+        eventId,
+        currentUser.id,
+      );
 
     if (
       existingRegistration &&
@@ -190,15 +139,8 @@ export class EventsService {
       throw new ConflictException(ERROR_MESSAGES.EVENT_ALREADY_REGISTERED);
     }
 
-    const registeredCount = await this.registrationsRepository.count({
-      where: {
-        event_id: eventId,
-        status: In([
-          EventRegistrationStatus.REGISTERED,
-          EventRegistrationStatus.ATTENDED,
-        ]),
-      },
-    });
+    const registeredCount =
+      await this.registrationsRepository.countSpotHolding(eventId);
 
     const remainingSpots = event.capacity - registeredCount;
     const status =
@@ -221,9 +163,10 @@ export class EventsService {
   }
 
   async cancelRegistration(eventId: string, currentUser: User) {
-    const registration = await this.registrationsRepository.findOne({
-      where: { event_id: eventId, user_id: currentUser.id },
-    });
+    const registration = await this.registrationsRepository.findByEventAndUser(
+      eventId,
+      currentUser.id,
+    );
 
     if (!registration) {
       throw new NotFoundException(ERROR_MESSAGES.EVENT_REGISTRATION_NOT_FOUND);
