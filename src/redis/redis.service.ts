@@ -80,12 +80,44 @@ export class RedisService {
 
     return deleted;
   }
-  // 
+  //
   async incr(key: string): Promise<number> {
     return this.client.incr(key);
   }
 
   async expire(key: string, seconds: number): Promise<number> {
     return this.client.expire(key, seconds);
+  }
+
+  /**
+   * Atomically increments a counter and makes sure it has an expiration.
+   * The TTL is set only when the key is new (or somehow has no TTL), so
+   * later increments never extend or reset the existing window.
+   */
+  async incrWithExpire(key: string, seconds: number): Promise<number> {
+    const script = `
+      local count = redis.call('INCR', KEYS[1])
+      if count == 1 or redis.call('TTL', KEYS[1]) == -1 then
+        redis.call('EXPIRE', KEYS[1], ARGV[1])
+      end
+      return count
+    `;
+    const result = await this.client.eval(script, 1, key, seconds);
+    return Number(result);
+  }
+
+  /**
+   * Atomically deletes a key only if its current value equals `expected`.
+   * Returns true if this call deleted the key.
+   */
+  async delIfEquals(key: string, expected: string): Promise<boolean> {
+    const script = `
+      if redis.call('GET', KEYS[1]) == ARGV[1] then
+        return redis.call('DEL', KEYS[1])
+      end
+      return 0
+    `;
+    const result = await this.client.eval(script, 1, key, expected);
+    return Number(result) === 1;
   }
 }

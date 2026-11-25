@@ -333,11 +333,11 @@ export class AuthService {
     email: string,
   ): Promise<void> {
     const key = this.getSendLimitKey(purpose, email);
-    const count = await this.redisService.incr(key);
-
-    if (count === 1) { 
-      await this.redisService.expire(key, OTP_CONFIG.SEND_WINDOW_SECONDS);
-    }
+    // INCR + EXPIRE in one atomic script; the window is not reset on later requests
+    const count = await this.redisService.incrWithExpire(
+      key,
+      OTP_CONFIG.SEND_WINDOW_SECONDS,
+    );
 
     if (count > OTP_CONFIG.MAX_SEND_REQUESTS) {
       throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_REQUESTS);
@@ -411,11 +411,14 @@ export class AuthService {
     const otpKey = `${otp_prefix}:${user.id}`;
     const attemptsKey = this.getAttemptsKey(purpose, normalizedEmail);
 
-    // 1. Check if max verification attempts have already been exceeded
-    const attemptsStr = await this.redisService.get(attemptsKey);
-    const currentAttempts = attemptsStr ? parseInt(attemptsStr, 10) : 0;
+    // 1. Atomically reserve an attempt slot before comparing. Concurrent
+    //    requests each get a distinct count, so none can slip past the limit.
+    const attempts = await this.redisService.incrWithExpire(
+      attemptsKey,
+      this.OTP_TTL,
+    );
 
-    if (currentAttempts >= OTP_CONFIG.MAX_VERIFY_ATTEMPTS) {
+    if (attempts > OTP_CONFIG.MAX_VERIFY_ATTEMPTS) {
       await this.redisService.del(otpKey);
       throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS);
     }
@@ -429,13 +432,8 @@ export class AuthService {
     const otpRecord = JSON.parse(otpDataString);
     const isOtpValid = await bcrypt.compare(otp, otpRecord.otpHash);
 
-    // 3. If invalid guess: increment attempts counter and invalidate if limit reached
+    // 3. If invalid guess: the attempt is already counted; invalidate if this was the last one
     if (!isOtpValid) {
-      const attempts = await this.redisService.incr(attemptsKey);
-      if (attempts === 1) {
-        await this.redisService.expire(attemptsKey, this.OTP_TTL);
-      }
-
       if (attempts >= OTP_CONFIG.MAX_VERIFY_ATTEMPTS) {
         await this.redisService.del(otpKey);
         throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS);
@@ -444,13 +442,22 @@ export class AuthService {
       throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
-    // 4. On successful verification: delete attempts counter
+    if (consume) {
+      // 4. Atomically consume the OTP: delete it only if it still holds the exact
+      //    value we verified. Only one concurrent request can win this.
+      const consumed = await this.redisService.delIfEquals(
+        otpKey,
+        otpDataString,
+      );
+      if (!consumed) {
+        throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
+      }
+    }
+
+    // 5. On successful verification: delete attempts counter
     await this.redisService.del(attemptsKey);
 
     if (consume) {
-      // Delete OTP from Redis after successful verification
-      await this.redisService.del(otpKey);
-
       if (purpose === AuthOtpPurpose.EmailVerification) {
         await this.user_repository.update(user.id, { verified_email: true });
       }
