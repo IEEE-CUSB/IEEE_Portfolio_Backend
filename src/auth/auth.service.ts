@@ -16,7 +16,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from 'src/users/users.repository';
 import { User } from 'src/users/entities/user.entity';
 import { RedisService } from 'src/redis/redis.service';
-import { RedisKeyPrefix } from 'src/redis/redis.constants';
+import { RedisKeyPrefix, OTP_CONFIG } from 'src/redis/redis.constants';
 import { RolesService } from 'src/roles/roles.service';
 import { RoleName } from 'src/roles/entities/role.entity';
 import { MailService } from '../mail/mail.service';
@@ -322,13 +322,46 @@ export class AuthService {
 
     return { access_token };
   }
+  // Helpers for OTP send rate limiting & attempt limits
+  private getSendLimitKey(purpose: AuthOtpPurpose, email: string): string {
+    return `${RedisKeyPrefix.OtpSendLimit}:${purpose}:${email.toLowerCase().trim()}`;
+  }
+
+  private getAttemptsKey(purpose: AuthOtpPurpose, email: string): string {
+    return `${RedisKeyPrefix.OtpAttempts}:${purpose}:${email.toLowerCase().trim()}`;
+  }
+
+  private async enforceSendRateLimit(
+    purpose: AuthOtpPurpose,
+    email: string,
+  ): Promise<void> {
+    const key = this.getSendLimitKey(purpose, email);
+    // INCR + EXPIRE in one atomic script; the window is not reset on later requests
+    const count = await this.redisService.incrWithExpire(
+      key,
+      OTP_CONFIG.SEND_WINDOW_SECONDS,
+    );
+
+    if (count > OTP_CONFIG.MAX_SEND_REQUESTS) {
+      throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_REQUESTS);
+    }
+  }
 
   private async generateOtp(
     email: string,
     purpose: AuthOtpPurpose,
   ): Promise<{ success: boolean }> {
-    const user = await this.user_repository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Enforce send rate limit (e.g. max 5 sends per 15 minutes)
+    await this.enforceSendRateLimit(purpose, normalizedEmail);
+
+    const user = await this.user_repository.findByEmail(normalizedEmail);
     if (!user) {
+      // Non-revealing for password reset: silently return success without revealing email doesn't exist
+      if (purpose === AuthOtpPurpose.PasswordReset) {
+        return { success: true };
+      }
       throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
     }
 
@@ -337,7 +370,6 @@ export class AuthService {
     }
 
     const otp = this.generateNumericOtp(6);
-
     const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS ?? 10);
     const otpHash = await bcrypt.hash(otp, saltRounds);
 
@@ -351,15 +383,15 @@ export class AuthService {
       otpData,
     );
 
+    // Reset attempts key to 0
+    await this.redisService.del(this.getAttemptsKey(purpose, normalizedEmail));
+
+    // Send the email
     if (purpose === AuthOtpPurpose.EmailVerification) {
-      await this.mailerService.sendEmailVerificationOtp(email, otp);
+      await this.mailerService.sendEmailVerificationOtp(user.email, otp);
     } else if (purpose === AuthOtpPurpose.PasswordReset) {
-      await this.mailerService.sendPasswordResetOtp(email, otp);
+      await this.mailerService.sendPasswordResetOtp(user.email, otp);
     }
-    // For now, just a console log
-    // console.log(
-    //   `[DEV] OTP for ${email} (${purpose}): ${otp} (Expires in 10 minutes)`,
-    // );
 
     return { success: true };
   }
@@ -370,31 +402,65 @@ export class AuthService {
     purpose: AuthOtpPurpose,
     consume: boolean = true,
   ): Promise<{ success: boolean }> {
-    const user = await this.user_repository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.user_repository.findByEmail(normalizedEmail);
+
+    // Non-revealing: For password reset check/verify, do not reveal user existence
     if (!user) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
-    // Retrieve OTP record from Redis
     const otp_prefix = this.getOtpPrefix(purpose);
-    const otpDataString = await this.redisService.get(
-      `${otp_prefix}:${user.id}`,
+    const otpKey = `${otp_prefix}:${user.id}`;
+    const attemptsKey = this.getAttemptsKey(purpose, normalizedEmail);
+
+    // 1. Atomically reserve an attempt slot before comparing. Concurrent
+    //    requests each get a distinct count, so none can slip past the limit.
+    const attempts = await this.redisService.incrWithExpire(
+      attemptsKey,
+      this.OTP_TTL,
     );
+
+    if (attempts > OTP_CONFIG.MAX_VERIFY_ATTEMPTS) {
+      await this.redisService.del(otpKey);
+      throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS);
+    }
+
+    // 2. Retrieve OTP record from Redis
+    const otpDataString = await this.redisService.get(otpKey);
     if (!otpDataString) {
       throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     const otpRecord = JSON.parse(otpDataString);
-
     const isOtpValid = await bcrypt.compare(otp, otpRecord.otpHash);
+
+    // 3. If invalid guess: the attempt is already counted; invalidate if this was the last one
     if (!isOtpValid) {
+      if (attempts >= OTP_CONFIG.MAX_VERIFY_ATTEMPTS) {
+        await this.redisService.del(otpKey);
+        throw new BadRequestException(ERROR_MESSAGES.TOO_MANY_OTP_ATTEMPTS);
+      }
+
       throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     if (consume) {
-      // Delete OTP from Redis after successful verification
-      await this.redisService.del(`${otp_prefix}:${user.id}`);
+      // 4. Atomically consume the OTP: delete it only if it still holds the exact
+      //    value we verified. Only one concurrent request can win this.
+      const consumed = await this.redisService.delIfEquals(
+        otpKey,
+        otpDataString,
+      );
+      if (!consumed) {
+        throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
+      }
+    }
 
+    // 5. On successful verification: delete attempts counter
+    await this.redisService.del(attemptsKey);
+
+    if (consume) {
       if (purpose === AuthOtpPurpose.EmailVerification) {
         await this.user_repository.update(user.id, { verified_email: true });
       }
@@ -440,9 +506,11 @@ export class AuthService {
       );
     }
 
-    const user = await this.user_repository.findByEmail(email);
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await this.user_repository.findByEmail(normalizedEmail);
     if (!user) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+      // Non-revealing: Throw invalid token instead of User Not Found
+      throw new BadRequestException(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN);
     }
 
     if (user.password) {

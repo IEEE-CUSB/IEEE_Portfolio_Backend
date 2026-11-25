@@ -86,6 +86,10 @@ export const ERROR_MESSAGES = {
   // communication
   FAILED_TO_SEND_OTP_EMAIL: 'Failed to send OTP email',
   OTP_REQUEST_WAIT: 'Please wait a minute before requesting a new code',
+  TOO_MANY_OTP_REQUESTS:
+    'Too many OTP requests for this email. Please try again after 15 minutes',
+  TOO_MANY_OTP_ATTEMPTS:
+    'Maximum verification attempts exceeded. This code has been invalidated. Please request a new code',
 
   // database
   FAILED_TO_SAVE_IN_DB: 'Failed to save the data to database',
