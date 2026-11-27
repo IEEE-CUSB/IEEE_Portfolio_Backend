@@ -20,6 +20,7 @@ import {
   ApiOperation,
   ApiTags,
   ApiConsumes,
+  ApiForbiddenResponse,
 } from '@nestjs/swagger';
 import {
   ApiBadRequestErrorResponse,
@@ -99,7 +100,7 @@ export class AuthController {
   @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.INVALID_OR_EXPIRED_TOKEN)
   @ApiInternalServerError(ERROR_MESSAGES.INTERNAL_SERVER_ERROR)
   @ResponseMessage(SUCCESS_MESSAGES.AUTH_ME)
-  async getCurrentUser(@Req() req: Request & { user: User }) {
+  getCurrentUser(@Req() req: Request & { user: User }) {
     return req.user;
   }
 
@@ -108,7 +109,7 @@ export class AuthController {
   @ApiOkResponse(login_swagger.responses.success)
   @ApiUnauthorizedErrorResponse(ERROR_MESSAGES.WRONG_PASSWORD)
   @ApiNotFoundErrorResponse(ERROR_MESSAGES.USER_NOT_FOUND)
-  @ApiForbiddenErrorResponse(ERROR_MESSAGES.EMAIL_NOT_VERIFIED)
+  @ApiForbiddenResponse(login_swagger.responses.emailNotVerified)
   @ResponseMessage(SUCCESS_MESSAGES.LOGGED_IN)
   @Post('login')
   async login(

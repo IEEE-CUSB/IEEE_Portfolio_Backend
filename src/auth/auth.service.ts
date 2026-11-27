@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -175,6 +176,14 @@ export class AuthService {
       user = await this.validateUserPassword(user_id, password);
     } catch {
       throw new UnauthorizedException(ERROR_MESSAGES.WRONG_CREDENTIALS);
+    }
+
+    if (!user.verified_email) {
+      throw new ForbiddenException({
+        message: ERROR_MESSAGES.EMAIL_NOT_VERIFIED,
+        code: 'EMAIL_NOT_VERIFIED',
+        email: user.email,
+      });
     }
 
     const { access_token, refresh_token } = await this.generateTokens(user_id);

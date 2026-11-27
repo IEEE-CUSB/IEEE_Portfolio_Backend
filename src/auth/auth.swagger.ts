@@ -1,4 +1,7 @@
-import { SUCCESS_MESSAGES } from '../constants/swagger-messages';
+import {
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+} from '../constants/swagger-messages';
 
 const user_example = {
   id: 'd102dadc-0b17-4e83-812b-00103b606a1f',
@@ -72,6 +75,18 @@ export const login_swagger = {
             example:
               'refresh_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...; HttpOnly; Secure; SameSite=Strict',
           },
+        },
+      },
+    },
+    emailNotVerified: {
+      description:
+        'Login denied because the user email has not been verified. The frontend should redirect the user to the OTP verification page.',
+      schema: {
+        example: {
+          statusCode: 403,
+          message: ERROR_MESSAGES.EMAIL_NOT_VERIFIED,
+          code: 'EMAIL_NOT_VERIFIED',
+          email: 'student@example.com',
         },
       },
     },
